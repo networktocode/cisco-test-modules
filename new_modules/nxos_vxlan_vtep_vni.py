@@ -18,12 +18,12 @@
 
 DOCUMENTATION = '''
 ---
-module: nxos_vxlan_vtep
+module: nxos_vxlan_vtep_vni
 version_added: "2.2"
-short_description: Manages VXLAN Network Virtualization Endpoint (NVE)
+short_description: Creates a Virtual Network Identifier member (VNI)
 description:
-    - Manages VXLAN Network Virtualization Endpoint (NVE) overlay interface
-      that terminates VXLAN tunnels.
+    - Creates a Virtual Network Identifier member (VNI) for an NVE
+      overlay interface.
 author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
@@ -33,34 +33,16 @@ options:
         description:
             - Interface name for the VXLAN Network Virtualization Endpoint
         required: true
-    description:
+    vni:
         description:
-            - Description of the NVE interface.
-        required: false
+            - ID of the Virtual Network Identifier.
+        required: true
         default: null
-    host_reachability:
+    ingress_replication:
         description:
-            - Specify mechanism for host reachability advertisement.
+            - Specifies mechanism for host reachability advertisement.
         required: false
-        choices: ['true', 'false', 'default']
-        default: null
-    shutdown:
-        description:
-            - Administratively shutdown the NVE interface.
-        required: false
-        choices: ['true','false', 'default']
-        default: false
-    source_interface:
-        description:
-            - Specify the loopback interface whose IP address should be
-              used for the NVE interface.
-        required: false
-        default: null
-    source_interface_hold_down_time:
-        description:
-            - Suppresses advertisement of the NVE loopback address until
-              the overlay has converged.
-        required: false
+        choices: ['bgp', 'static', 'default']
         default: null
     state:
         description:
@@ -76,35 +58,20 @@ options:
         choices: ['true','false']
 '''
 EXAMPLES = '''
-- nxos_vxlan_vtep:
+- nxos_vxlan_vtep_vni:
     interface=nve1
-    description=default
-    host_reachability=default
-    source_interface=Loopback0
-    source_interface_hold_down_time=30
-    shutdown=default
+    vni=6000
+    ingress_replication=default
 '''
 
-ACCEPTED = ['true','false', 'default']
-BOOL_PARAMS = [
-    'shutdown',
-    'host_reachability'
-]
+BOOL_PARAMS = []
 PARAM_TO_COMMAND_KEYMAP = {
-    'description': 'description',
-    'host_reachability': 'host-reachability protocol bgp',
     'interface': 'interface',
-    'shutdown': 'shutdown',
-    'source_interface': 'source-interface',
-    'source_interface_hold_down_time': 'source-interface hold-down-time'
+    'vni': 'member vni',
+    'ingress_replication': 'ingress-replication protocol',
 }
-PARAM_TO_DEFAULT_KEYMAP = {
-    'description': False,
-    'shutdown': True,
-}
-
+PARAM_TO_DEFAULT_KEYMAP = {}
 WARNINGS = []
-
 
 def invoke(name, *args, **kwargs):
     func = globals().get(name)
@@ -123,16 +90,20 @@ def get_value(arg, config, module):
             value = False
     else:
         REGEX = re.compile(r'(?:{0}\s)(?P<value>.*)$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
-        NO_DESC_REGEX = re.compile(r'\s+{0}\s*$'.format('no description'), re.M)
         value = ''
-        if arg == 'description':
-            if NO_DESC_REGEX.search(config):
-                value = ''
-            elif PARAM_TO_COMMAND_KEYMAP[arg] in config:
-                value = REGEX.search(config).group('value').strip()
-        else:
-            if PARAM_TO_COMMAND_KEYMAP[arg] in config:
-                value = REGEX.search(config).group('value').strip()
+        if PARAM_TO_COMMAND_KEYMAP[arg] in config:
+            value = REGEX.search(config).group('value')
+    return value
+
+
+def check_interface(module, netcfg):
+    config = str(netcfg)
+
+    REGEX = re.compile(r'(?:interface nve)(?P<value>.*)$', re.M)
+    value = ''
+    if 'interface nve' in config:
+        value = 'nve{0}'.format(REGEX.search(config).group('value'))
+
     return value
 
 
@@ -140,15 +111,19 @@ def get_existing(module, args):
     existing = {}
     netcfg = get_config(module)
 
-    parents = ['interface {0}'.format(module.params['interface'].lower())]
-    config = netcfg.get_section(parents)
+    interface_exist = check_interface(module, netcfg)
+    if interface_exist:
+        parents = ['interface {0}'.format(interface_exist)]
+        parents.append('member vni {0}'.format(module.params['vni']))
+        config = netcfg.get_section(parents)
 
-    if config:
-        for arg in args:
-            existing[arg] = get_value(arg, config, module)
+        if config:
+            for arg in args:
+                if arg != 'interface':
+                    existing[arg] = get_value(arg, config, module)
+            existing['interface'] = interface_exist
 
-        existing['interface'] = module.params['interface'].lower()
-    return existing
+    return existing, interface_exist
 
 
 def apply_key_map(key_map, table):
@@ -189,23 +164,27 @@ def state_present(module, existing, proposed, candidate):
             commands.append(command)
 
     if commands:
-        parents = ['interface {0}'.format(module.params['interface'].lower())]
+        vni_command = 'member vni {0}'.format(module.params['vni'])
+        parents = ['interface {0}'.format(module.params['interface'])]
+        if vni_command in commands:
+            commands.remove(vni_command)
+            parents.append(vni_command)
+
         candidate.add(commands, parents=parents)
 
 
 def state_absent(module, existing, proposed, candidate):
-    commands = ['no interface {0}'.format(module.params['interface'].lower())]
-    candidate.add(commands, parents=[])
+    commands = ['no member vni {0}'.format(module.params['vni'])]
+    parents = ['interface {0}'.format(module.params['interface'])]
+    candidate.add(commands, parents=parents)
 
 
 def main():
     argument_spec = dict(
             interface=dict(required=True, type='str'),
-            description=dict(required=False, type='str'),
-            host_reachability=dict(required=False, type='str', choices=ACCEPTED),
-            shutdown=dict(required=False, type='str', choices=ACCEPTED),
-            source_interface=dict(required=False, type='str'),
-            source_interface_hold_down_time=dict(required=False, type='str'),
+            vni=dict(required=True, type='str'),
+            ingress_replication=dict(required=False, type='str',
+                                     choices=['bgp', 'static', 'default']),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
@@ -218,14 +197,11 @@ def main():
 
     args =  [
             'interface',
-            'description',
-            'host_reachability',
-            'shutdown',
-            'source_interface',
-            'source_interface_hold_down_time'
+            'vni',
+            'ingress_replication',
         ]
 
-    existing = invoke('get_existing', module, args)
+    existing, interface_exist = invoke('get_existing', module, args)
     end_state = existing
     proposed_args = dict((k, v) for k, v in module.params.iteritems()
                     if v is not None and k in args)
@@ -249,25 +225,34 @@ def main():
 
     result = {}
     if state == 'present' or (state == 'absent' and existing):
-        if not existing:
-            WARNINGS.append("The proposed NVE interface did not exist. "
-                            "It's recommended to use nxos_interface to create "
-                            "all logical interfaces.")
-        candidate = NetworkConfig(indent=3)
-        invoke('state_%s' % state, module, existing, proposed, candidate)
+        if not interface_exist:
+            WARNINGS.append("The proposed NVE interface does not exist. "
+                            "Use nxos_interface to create it first.")
+        elif interface_exist != module.params['interface']:
+            module.fail_json(msg='Only 1 NVE interface is allowed on '
+                                 'the switch.')
+        elif (existing and state == 'absent' and
+                existing['vni'] != module.params['vni']):
+                module.fail_json(msg="ERROR: VNI delete failed: Could not find"
+                                     " vni node for {0}".format(
+                                     module.params['vni']),
+                                     existing_vni=existing['vni'])
+        else:
+            candidate = NetworkConfig(indent=3)
+            invoke('state_%s' % state, module, existing, proposed, candidate)
 
-        try:
-            response = load_config(module, candidate)
-            result.update(response)
-        except NetworkError:
-            exc = get_exception()
-            module.fail_json(msg=str(exc))
+            try:
+                response = load_config(module, candidate)
+                result.update(response)
+            except NetworkError:
+                exc = get_exception()
+                module.fail_json(msg=str(exc))
     else:
         result['updates'] = []
 
     result['connected'] = module.connected
     if module.params['m_facts']:
-        end_state = invoke('get_existing', module, args)
+        end_state, interface_exist = invoke('get_existing', module, args)
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args

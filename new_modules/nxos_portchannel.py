@@ -120,6 +120,9 @@ changed:
 '''
 
 
+WARNINGS = []
+
+
 def execute_config_command(commands, module):
     try:
         output = module.configure(commands)
@@ -480,8 +483,6 @@ def main():
     changed = False
     existing = get_portchannel(group, module)
 
-    #module.exit_json(existing=existing)
-
     args = dict(group=group, mode=mode, min_links=min_links, members=members)
     proposed = dict((k, v) for k, v in args.iteritems() if v is not None)
     end_state = existing
@@ -500,8 +501,11 @@ def main():
                                  group=group)
 
         elif existing and group in active_portchannels:
-            command = get_commands_to_remove_members(proposed, existing)
+            command = config_portchannel(proposed, mode, group)
             commands.append(command)
+            WARNINGS.append("The proposed port-channel interface did not "
+                            "exist. It's recommended to use nxos_interface to "
+                            "create all logical interfaces.")
 
             command = get_commands_to_add_members(proposed, existing, module)
             commands.append(command)
@@ -536,6 +540,9 @@ def main():
     results['state'] = state
     results['updates'] = cmds
     results['changed'] = changed
+
+    if WARNINGS:
+        results['warnings'] = WARNINGS
 
     module.exit_json(**results)
 
