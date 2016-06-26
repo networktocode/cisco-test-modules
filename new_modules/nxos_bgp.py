@@ -18,6 +18,7 @@
 
 DOCUMENTATION = '''
 ---
+
 module: nxos_bgp
 version_added: "2.2"
 short_description: Manages BGP configuration
@@ -63,7 +64,8 @@ options:
         default: null
     bestpath_cost_community_ignore:
         description:
-            - Enable/Disable Ignores the cost community for BGP best-path calculations.
+            - Enable/Disable Ignores the cost community for BGP best-path
+              calculations.
         required: false
         choices: ['true','false', 'default']
         default: null
@@ -283,10 +285,12 @@ EXAMPLES = '''
       state=present
       transport=cli
 '''
-
+RETURN = '''
+'''
 
 import re
 
+WARNINGS = []
 ACCEPTED = ['true','false', 'default']
 BOOL_PARAMS = [
     'bestpath_always_compare_med',
@@ -375,8 +379,7 @@ PARAM_TO_COMMAND_KEYMAP = {
     'shutdown': 'shutdown',
     'suppress_fib_pending': 'suppress-fib-pending',
     'timer_bestpath_limit': 'timers bestpath-limit',
-    'timer_bgp_hold': 'timer bgp',
-    'timer_bgp_keepalive': 'timer bpg',
+    'timer_bgp': 'timers bgp',
     'vrf': 'vrf'
 }
 
@@ -475,21 +478,28 @@ def get_existing(module, args):
             parents = bgp_parent
 
         config = netcfg.get_section(parents)
-
         if config:
-            # remove the asn
-            args.pop(0)
-
             for arg in args:
-                if module.params['vrf'] != 'default':
-                    if arg not in GLOBAL_PARAMS:
+                if arg != 'asn':
+                    if module.params['vrf'] != 'default':
+                        if arg not in GLOBAL_PARAMS:
+                            existing[arg] = get_value(arg, config)
+                    else:
                         existing[arg] = get_value(arg, config)
-                else:
-                    existing[arg] = get_value(arg, config)
 
             existing['asn'] = existing_asn
             if module.params['vrf'] == 'default':
                 existing['vrf'] = 'default'
+        else:
+            if (module.params['state'] == 'present' and
+                    module.params['vrf'] != 'default'):
+                msg = ("VRF {0} doesn't exist. ".format(module.params['vrf']))
+                WARNINGS.append(msg)
+    else:
+        if (module.params['state'] == 'present' and
+                module.params['vrf'] != 'default'):
+            msg = ("VRF {0} doesn't exist. ".format(module.params['vrf']))
+            WARNINGS.append(msg)
 
     return existing
 
@@ -507,20 +517,29 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
-def state_present(module, existing, proposed):
+def state_present(module, existing, proposed, candidate):
     commands = list()
+    if proposed.get('timer_bgp_hold') or proposed.get('timer_bgp_keepalive'):
+        proposed['timer_bgp'] = '{0} {1}'.format(proposed['timer_bgp_hold'],
+                                            proposed['timer_bgp_keepalive'])
+        proposed.pop('timer_bgp_hold')
+        proposed.pop('timer_bgp_keepalive')
+    if existing.get('timer_bgp_hold') or existing.get('timer_bgp_keepalive'):
+        existing['timer_bgp'] = '{0} {1}'.format(existing['timer_bgp_hold'],
+                                            existing['timer_bgp_keepalive'])
+        existing.pop('timer_bgp_hold')
+        existing.pop('timer_bgp_keepalive')
+
+
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
-
     for key, value in proposed_commands.iteritems():
         if value is True:
             commands.append(key)
         elif value is False:
             commands.append('no {0}'.format(key))
         elif value == 'default':
-            if key == 'vrf':
-                pass
-            elif key in PARAM_TO_DEFAULT_KEYMAP.keys():
+            if key in PARAM_TO_DEFAULT_KEYMAP.keys():
                 commands.append('{0} {1}'.format(key, PARAM_TO_DEFAULT_KEYMAP[key]))
             elif existing_commands.get(key):
                 existing_value = existing_commands.get(key)
@@ -535,8 +554,11 @@ def state_present(module, existing, proposed):
             if key == 'confederation peers':
                 existing_confederation_peers = existing.get('confederation_peers')
 
-                if not isinstance(existing_confederation_peers, list):
-                    existing_confederation_peers = [existing_confederation_peers]
+                if existing_confederation_peers:
+                    if not isinstance(existing_confederation_peers, list):
+                        existing_confederation_peers = [existing_confederation_peers]
+                else:
+                    existing_confederation_peers = []
 
                 values = value.split()
                 for each_value in values:
@@ -550,26 +572,29 @@ def state_present(module, existing, proposed):
                 command = '{0} {1}'.format(key, value)
                 commands.append(command)
 
-    asn_command = 'router bgp {0}'.format(module.params['asn'])
-    if asn_command in commands:
-        commands.remove(asn_command)
-    commands.insert(0, asn_command)
-    return commands
+    if commands:
+        commands = fix_commands(commands)
+        parents = ['router bgp {0}'.format(module.params['asn'])]
+        if module.params['vrf'] != 'default':
+            parents.append('vrf {0}'.format(module.params['vrf']))
+
+        candidate.add(commands, parents=parents)
 
 
-def state_absent(module, existing, proposed):
+def state_absent(module, existing, proposed,  candidate):
     commands = []
+    parents = []
     if module.params['vrf'] == 'default':
         commands.append('no router bgp {0}'.format(module.params['asn']))
     else:
-        if existing.get('vrf') == proposed.get('vrf'):
-            commands.append('router bgp {0}'.format(module.params['asn']))
+        if existing.get('vrf') == module.params['vrf']:
             commands.append('no vrf {0}'.format(module.params['vrf']))
+            parents = ['router bgp {0}'.format(module.params['asn'])]
 
-    return commands
+    candidate.add(commands, parents=parents)
 
 
-def fix_commands(commands, module):
+def fix_commands(commands):
     local_as_command = ''
     confederation_id_command = ''
 
@@ -578,63 +603,22 @@ def fix_commands(commands, module):
             local_as_command = command
         elif 'confederation identifier' in command:
             confederation_id_command = command
+        elif 'confederation peers' in command:
+            confederation_peers_command = command
 
     if local_as_command and confederation_id_command:
         commands.pop(commands.index(local_as_command))
         commands.pop(commands.index(confederation_id_command))
-
         commands.append(local_as_command)
         commands.append(confederation_id_command)
 
-    if module.params['state'] == 'present':
-        if module.params['vrf'] != 'default':
-            vrf_command = 'vrf {0}'.format(module.params['vrf'])
-
-            if vrf_command not in commands:
-                commands.insert(0, vrf_command)
-
-    asn_command = 'router bgp {0}'.format(module.params['asn'])
-    if asn_command in commands:
-        commands.remove(asn_command)
-    commands.insert(0, asn_command)
+    elif confederation_peers_command and confederation_id_command:
+        commands.pop(commands.index(confederation_peers_command))
+        commands.pop(commands.index(confederation_id_command))
+        commands.append(confederation_id_command)
+        commands.append(confederation_peers_command)
 
     return commands
-
-
-def custom_load_config(module, temp_commands):
-    commands = list()
-    netcfg = get_config(module)
-    bgp_parent = 'router bgp {0}'.format(module.params['asn'])
-    if module.params['vrf'] != 'default':
-        parents = [bgp_parent, 'vrf {0}'.format(module.params['vrf'])]
-    else:
-        parents = bgp_parent
-
-    section = netcfg.get_section(parents)
-    if section:
-        splitted_section = section.splitlines()
-        splitted_section.append('router bgp {0}'.format(module.params['asn']))
-    else:
-        splitted_section = []
-
-    stripped_section = [elem.strip() for elem in splitted_section]
-    commands = [command for command in temp_commands if command not in stripped_section]
-
-    save_config = module.params['save_config']
-    result = dict(changed=False)
-
-    if commands:
-        commands = fix_commands(commands, module)
-
-        if not module.check_mode:
-            module.config(commands)
-            if save_config:
-                module.config.save_config()
-
-        result['changed'] = True
-        result['updates'] = commands
-
-    return result
 
 
 def main():
@@ -750,7 +734,8 @@ def main():
 
     end_state = existing
     proposed_args = dict((k, v) for k, v in module.params.iteritems()
-                    if v is not None and k in args)
+                    if v is not None and k in args and k != 'asn' and
+                    k != 'vrf')
     proposed = {}
     for key, value in proposed_args.iteritems():
         if value.lower() == 'true':
@@ -769,10 +754,11 @@ def main():
 
     result = {}
     if state == 'present' or (state == 'absent' and existing):
-        temp_commands = invoke('state_%s' % state, module, existing, proposed)
+        candidate = NetworkConfig(indent=3)
+        invoke('state_%s' % state, module, existing, proposed, candidate)
 
         try:
-            response = custom_load_config(module, temp_commands)
+            response = load_config(module, candidate)
             result.update(response)
         except NetworkError:
             exc = get_exception()
@@ -786,6 +772,9 @@ def main():
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args
+
+    if WARNINGS:
+        result['warnings'] = WARNINGS
 
     module.exit_json(**result)
 

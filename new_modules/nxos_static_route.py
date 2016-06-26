@@ -17,7 +17,6 @@
 #
 DOCUMENTATION = '''
 ---
-
 module: nxos_static_route
 version_added: "2.2"
 short_description: Manages static route configuration
@@ -141,8 +140,7 @@ def get_existing(module, prefix, warnings):
     except (AttributeError, TypeError):
         group_route = {}
         if module.params['state'] == 'present':
-            msg = ("VRF {0} didn't exist. The task just "
-                   "created it.".format(module.params['vrf']))
+            msg = ("VRF {0} doesn't exist.".format(module.params['vrf']))
             warnings.append(msg)
 
     return group_route
