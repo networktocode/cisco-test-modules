@@ -96,7 +96,7 @@ EXAMPLES = '''
 
 def execute_config_command(commands, module):
     try:
-        module.configure(commands)
+        module.config(commands)
     except ShellError:
         clie = get_exception()
         module.fail_json(msg='Error sending CLI commands',
@@ -126,9 +126,9 @@ def get_cli_body_ssh(command, response, module):
 def execute_show(cmds, module, command_type=None):
     try:
         if command_type:
-            response = module.execute(cmds, command_type=command_type)
+            response = module.cli(cmds, command_type=command_type)
         else:
-            response = module.execute(cmds)
+            response = module.cli(cmds)
     except ShellError:
         clie = get_exception()
         module.fail_json(msg='Error sending {0}'.format(cmds),

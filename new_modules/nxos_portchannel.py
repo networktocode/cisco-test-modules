@@ -119,13 +119,11 @@ changed:
     sample: true
 '''
 
-
 WARNINGS = []
-
 
 def execute_config_command(commands, module):
     try:
-        output = module.configure(commands)
+        output = module.config(commands)
     except ShellError:
         clie = get_exception()
         module.fail_json(msg='Error sending CLI commands',
@@ -159,9 +157,9 @@ def get_cli_body_ssh(command, response, module, test):
 def execute_show(cmds, module, command_type=None):
     try:
         if command_type:
-            response = module.execute(cmds, command_type=command_type)
+            response = module.cli(cmds, command_type=command_type)
         else:
-            response = module.execute(cmds)
+            response = module.cli(cmds)
     except ShellError:
         clie = get_exception()
         module.fail_json(msg='Error sending {0}'.format(cmds),
@@ -496,16 +494,15 @@ def main():
             commands.append(['no interface port-channel{0}'.format(group)])
     elif state == 'present':
         if group not in active_portchannels:
-            module.fail_json(msg='The proposed port-channel does not exist '
-                                 'yet. Use nxos_interface to create it.',
-                                 group=group)
-
-        elif existing and group in active_portchannels:
             command = config_portchannel(proposed, mode, group)
             commands.append(command)
             WARNINGS.append("The proposed port-channel interface did not "
                             "exist. It's recommended to use nxos_interface to "
                             "create all logical interfaces.")
+
+        elif existing and group in active_portchannels:
+            command = get_commands_to_remove_members(proposed, existing)
+            commands.append(command)
 
             command = get_commands_to_add_members(proposed, existing, module)
             commands.append(command)

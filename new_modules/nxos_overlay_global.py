@@ -37,12 +37,6 @@ options:
             - Anycast gateway mac of the switch.
         required: true
         default: null
-    state:
-        description:
-            - Determines whether the config should be present or not on the device.
-        required: false
-        default: present
-        choices: ['present','absent']
     m_facts:
         description:
             - Used to print module facts
@@ -162,15 +156,12 @@ def normalize_mac(proposed_mac, module):
 def main():
     argument_spec = dict(
             anycast_gateway_mac=dict(required=True, type='str'),
-            m_facts=dict(required=False, default=False, type='bool'),
-            state=dict(choices=['present', 'absent'], default='present',
-                       required=False),
+            m_facts=dict(required=False, default=False, type='bool')
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
                         supports_check_mode=True)
 
-    state = module.params['state']
     args =  [
             'anycast_gateway_mac'
         ]
