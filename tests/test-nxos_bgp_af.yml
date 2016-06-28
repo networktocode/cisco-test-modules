@@ -31,7 +31,7 @@
     register: data
 
   - name: instantiate ipv6 unicast address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv6
       safi: unicast
@@ -52,7 +52,7 @@
         - data.end_state['vrf'] == 'test'
 
   - name: idempotency check
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv6
       safi: unicast
@@ -70,7 +70,7 @@
         - data.changed == false
 
   - name: advertise evpn routes into ipv6 unicast address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv6
       safi: unicast
@@ -93,7 +93,7 @@
         - data.end_state['advertise_l2vpn_evpn'] == true
 
   - name: idempotency check
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv6
       safi: unicast
@@ -112,7 +112,7 @@
         - data.changed == false
 
   - name: advertise evpn routes into ipv4 unicast address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv4
       safi: unicast
@@ -135,7 +135,7 @@
         - data.end_state['advertise_l2vpn_evpn'] == true
 
   - name: idempotency check
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: ipv4
       safi: unicast
@@ -154,7 +154,7 @@
         - data.changed == false
 
   - name: create vpnv4 unicast address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: vpnv4
       safi: unicast
@@ -174,7 +174,7 @@
         - data.end_state['vrf'] == 'default'
 
   - name: idempotency check
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: vpnv4
       safi: unicast
@@ -192,7 +192,7 @@
         - data.changed == false
 
   - name: create l2vpn evpn address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: l2vpn
       safi: evpn
@@ -213,7 +213,7 @@
         - data.end_state['vrf'] == 'default'
 
   - name: idempotency check
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: l2vpn
       safi: evpn
@@ -230,7 +230,7 @@
         - data.changed == false
 
   - name: remove l2vpn evpn address-family
-    cisco_bgp_af:
+    nxos_bgp_af:
       asn: 65535
       afi: l2vpn
       safi: evpn

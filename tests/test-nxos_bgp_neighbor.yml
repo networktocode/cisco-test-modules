@@ -1,0 +1,205 @@
+---
+
+- name: TESTING NXOS_BGP_NEIGHBOR
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+
+  tasks:
+  - name: remove the bgp process
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=absent
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - name: prepare the device
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - name: add a bgp neighbor
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      description="testing description"
+      local_as=10
+      update_source=loopback0
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['neighbor'] == '2.2.2.2'
+        - data.end_state['description'] == 'testing description'
+        - data.end_state['local_as'] == '10'
+        - data.end_state['update_source'] == 'loopback0'
+
+  - name: idempotency check
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      description="testing description"
+      local_as=10
+      update_source=loopback0
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set properties to their defaults
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      description=default
+      local_as=default
+      update_source=default
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['description'] == ''
+        - data.end_state['local_as'] == ''
+        - data.end_state['update_source'] == ''
+
+  - name: idempotency check
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      description=default
+      local_as=default
+      update_source=default
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add a neighbor for vrf test
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      vrf=test
+      remote_as=20
+      local_as=10
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['vrf'] == 'test'
+        - data.end_state['local_as'] == '10'
+        - data.end_state['remote_as'] == '20'
+
+  - name: idempotency check
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      vrf=test
+      remote_as=20
+      local_as=10
+      host={{ inventory_hostname }}
+      state=present
+      transport=cli
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: change remote-as and shutdown
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      vrf=test
+      remote_as=30
+      shutdown=true
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['remote_as'] == '30'
+        - data.end_state['shutdown'] == true
+
+  - name: idempotency check
+    cisco_bgp_neighbor:
+      asn=65535
+      neighbor=2.2.2.2
+      vrf=test
+      remote_as=30
+      shutdown=true
+      host={{ inventory_hostname }}
+      state=present
+      transport=cli
+      username=admin
+      password="!cisco123!"
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove the bgp process
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=absent
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
