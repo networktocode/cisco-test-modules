@@ -378,7 +378,8 @@ PARAM_TO_COMMAND_KEYMAP = {
     'shutdown': 'shutdown',
     'suppress_fib_pending': 'suppress-fib-pending',
     'timer_bestpath_limit': 'timers bestpath-limit',
-    'timer_bgp_fix': 'timers bgp',
+    'timer_bgp_hold': 'timers bgp',
+    'timer_bgp_keepalive': 'timers bgp',
     'vrf': 'vrf'
 }
 
@@ -499,6 +500,7 @@ def get_existing(module, args):
                 module.params['vrf'] != 'default'):
             msg = ("VRF {0} doesn't exist. ".format(module.params['vrf']))
             WARNINGS.append(msg)
+
     return existing
 
 
@@ -517,18 +519,6 @@ def apply_key_map(key_map, table):
 
 def state_present(module, existing, proposed, candidate):
     commands = list()
-    if proposed.get('timer_bgp_hold') or proposed.get('timer_bgp_keepalive'):
-        proposed['timer_bgp_fix'] = '{0} {1}'.format(proposed['timer_bgp_hold'],
-                                            proposed['timer_bgp_keepalive'])
-        proposed.pop('timer_bgp_hold')
-        proposed.pop('timer_bgp_keepalive')
-    if existing.get('timer_bgp_hold') or existing.get('timer_bgp_keepalive'):
-        existing['timer_bgp_fix'] = '{0} {1}'.format(existing['timer_bgp_hold'],
-                                            existing['timer_bgp_keepalive'])
-        existing.pop('timer_bgp_hold')
-        existing.pop('timer_bgp_keepalive')
-
-
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
     for key, value in proposed_commands.iteritems():
@@ -564,6 +554,12 @@ def state_present(module, existing, proposed, candidate):
                         existing_confederation_peers.append(each_value)
                 peer_string = ' '.join(existing_confederation_peers)
                 commands.append('{0} {1}'.format(key, peer_string))
+            elif key.startswith('timers bgp'):
+                command = 'timers bgp {0} {1}'.format(
+                                            proposed['timer_bgp_keepalive'],
+                                            proposed['timer_bgp_hold'])
+                if command not in commands:
+                    commands.append(command)
             else:
                 if value.startswith('size'):
                     value = value.replace('_', ' ')

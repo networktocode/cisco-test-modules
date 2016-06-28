@@ -343,8 +343,8 @@
       asn=65535
       router_id="1.1.1.1"
       cluster_id=20
-      timer_bgp_hold=30
-      timer_bgp_keepalive=80
+      timer_bgp_hold=80
+      timer_bgp_keepalive=30
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
@@ -366,8 +366,8 @@
       asn=65535
       router_id="1.1.1.1"
       cluster_id=20
-      timer_bgp_hold=30
-      timer_bgp_keepalive=80
+      timer_bgp_hold=80
+      timer_bgp_keepalive=30
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
@@ -379,3 +379,53 @@
   - assert:
       that:
         - data.changed == false
+
+  - name: configure local_as and confederation_id for test vrf
+    nxos_bgp:
+      asn=65535
+      local_as=10
+      confederation_id=20
+      vrf=test
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['local_as'] == '10'
+        - data.end_state['confederation_id'] == '20'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      local_as=10
+      confederation_id=20
+      vrf=test
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove the bgp process
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=absent
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+    tags: test
