@@ -747,11 +747,11 @@ def main():
 
     proposed = {}
     for key, value in proposed_args.iteritems():
-        if value.lower() == 'true':
+        if value == 'true':
             value = True
-        elif value.lower() == 'false':
+        elif value == 'false':
             value = False
-        elif value.lower() == 'default':
+        elif value == 'default':
             value = PARAM_TO_DEFAULT_KEYMAP.get(key)
             if value is None:
                 if key in BOOL_PARAMS:

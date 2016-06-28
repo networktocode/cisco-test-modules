@@ -571,8 +571,16 @@ def state_present(module, existing, proposed, candidate):
         parents = ['router bgp {0}'.format(module.params['asn'])]
         if module.params['vrf'] != 'default':
             parents.append('vrf {0}'.format(module.params['vrf']))
-
         candidate.add(commands, parents=parents)
+    else:
+        if len(proposed.keys()) == 0:
+            if module.params['vrf'] != 'default':
+                commands.append('vrf {0}'.format(module.params['vrf']))
+                parents = ['router bgp {0}'.format(module.params['asn'])]
+            else:
+                commands.append('router bgp {0}'.format(module.params['asn']))
+                parents = []
+            candidate.add(commands, parents=parents)
 
 
 def state_absent(module, existing, proposed,  candidate):

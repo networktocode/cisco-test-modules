@@ -1,0 +1,248 @@
+---
+
+- name: TESTING NXOS_BGP_AF
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+
+  tasks:
+  - name: remove the bgp process
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=absent
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+    tags: test
+
+  - name: prepare the device
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - name: instantiate ipv6 unicast address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv6
+      safi: unicast
+      vrf: test
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['afi'] == 'ipv6'
+        - data.end_state['safi'] == 'unicast'
+        - data.end_state['vrf'] == 'test'
+
+  - name: idempotency check
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv6
+      safi: unicast
+      vrf: test
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: advertise evpn routes into ipv6 unicast address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv6
+      safi: unicast
+      vrf: test
+      advertise_l2vpn_evpn: true
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['afi'] == 'ipv6'
+        - data.end_state['safi'] == 'unicast'
+        - data.end_state['vrf'] == 'test'
+        - data.end_state['advertise_l2vpn_evpn'] == true
+
+  - name: idempotency check
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv6
+      safi: unicast
+      vrf: test
+      advertise_l2vpn_evpn: true
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: advertise evpn routes into ipv4 unicast address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_l2vpn_evpn: true
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['afi'] == 'ipv4'
+        - data.end_state['safi'] == 'unicast'
+        - data.end_state['vrf'] == 'test'
+        - data.end_state['advertise_l2vpn_evpn'] == true
+
+  - name: idempotency check
+    cisco_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_l2vpn_evpn: true
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: create vpnv4 unicast address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: vpnv4
+      safi: unicast
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['afi'] == 'vpnv4'
+        - data.end_state['safi'] == 'unicast'
+        - data.end_state['vrf'] == 'default'
+
+  - name: idempotency check
+    cisco_bgp_af:
+      asn: 65535
+      afi: vpnv4
+      safi: unicast
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+    tags: test
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: create l2vpn evpn address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: l2vpn
+      safi: evpn
+      state: present
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['afi'] == 'l2vpn'
+        - data.end_state['safi'] == 'evpn'
+        - data.end_state['vrf'] == 'default'
+
+  - name: idempotency check
+    cisco_bgp_af:
+      asn: 65535
+      afi: l2vpn
+      safi: evpn
+      host: "{{ inventory_hostname }}"
+      state: present
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove l2vpn evpn address-family
+    cisco_bgp_af:
+      asn: 65535
+      afi: l2vpn
+      safi: evpn
+      host: "{{ inventory_hostname }}"
+      state: absent
+      transport: nxapi
+      username: admin
+      password: "!cisco123!"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state == {}
