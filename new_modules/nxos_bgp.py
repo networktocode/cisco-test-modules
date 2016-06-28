@@ -18,7 +18,6 @@
 
 DOCUMENTATION = '''
 ---
-
 module: nxos_bgp
 version_added: "2.2"
 short_description: Manages BGP configuration
@@ -597,6 +596,7 @@ def state_absent(module, existing, proposed,  candidate):
 def fix_commands(commands):
     local_as_command = ''
     confederation_id_command = ''
+    confederation_peers_command = ''
 
     for command in commands:
         if 'local-as' in command:
