@@ -1,0 +1,381 @@
+---
+
+- name: TESTING NXOS_BGP
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+
+  tasks:
+  - name: remove the bgp process
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=absent
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+    tags: test
+
+
+  - name: prepare the device
+    nxos_bgp:
+      asn=65535
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - name: instantiate vrf into bgp process
+    nxos_bgp:
+      asn=65535
+      vrf=test
+      router_id=1.1.1.1
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['vrf'] == 'test'
+        - data.end_state['router_id'] == '1.1.1.1'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      vrf=test
+      router_id=1.1.1.1
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set all boolean params
+    nxos_bgp:
+      asn=65535
+      bestpath_always_compare_med=true
+      bestpath_aspath_multipath_relax=true
+      bestpath_compare_neighborid=true
+      bestpath_compare_routerid=true
+      bestpath_cost_community_ignore=true
+      bestpath_med_confed=true
+      bestpath_med_missing_as_worst=true
+      bestpath_med_non_deterministic=true
+      enforce_first_as=true
+      fast_external_fallover=true
+      isolate=true
+      flush_routes=true
+      disable_policy_batching=true
+      graceful_restart_helper=true
+      log_neighbor_changes=true
+      neighbor_down_fib_accelerate=true
+      shutdown=true
+      suppress_fib_pending=true
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['bestpath_always_compare_med'] == true
+        - data.end_state['bestpath_aspath_multipath_relax'] == true
+        - data.end_state['bestpath_compare_neighborid'] == true
+        - data.end_state['bestpath_compare_routerid'] == true
+        - data.end_state['bestpath_cost_community_ignore'] == true
+        - data.end_state['bestpath_med_confed'] == true
+        - data.end_state['bestpath_med_missing_as_worst'] == true
+        - data.end_state['bestpath_med_non_deterministic'] == true
+        - data.end_state['enforce_first_as'] == true
+        - data.end_state['fast_external_fallover'] == true
+        - data.end_state['isolate'] == true
+        - data.end_state['flush_routes'] == true
+        - data.end_state['disable_policy_batching'] == true
+        - data.end_state['graceful_restart_helper'] == true
+        - data.end_state['log_neighbor_changes'] == true
+        - data.end_state['neighbor_down_fib_accelerate'] == true
+        - data.end_state['shutdown'] == true
+        - data.end_state['suppress_fib_pending'] == true
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      bestpath_always_compare_med=true
+      bestpath_aspath_multipath_relax=true
+      bestpath_compare_neighborid=true
+      bestpath_compare_routerid=true
+      bestpath_cost_community_ignore=true
+      bestpath_med_confed=true
+      bestpath_med_missing_as_worst=true
+      bestpath_med_non_deterministic=true
+      enforce_first_as=true
+      fast_external_fallover=true
+      isolate=true
+      flush_routes=true
+      disable_policy_batching=true
+      graceful_restart_helper=true
+      log_neighbor_changes=true
+      neighbor_down_fib_accelerate=true
+      shutdown=true
+      suppress_fib_pending=true
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set all boolean params to their default
+    nxos_bgp:
+      asn=65535
+      bestpath_always_compare_med=default
+      bestpath_aspath_multipath_relax=default
+      bestpath_compare_neighborid=default
+      bestpath_compare_routerid=default
+      bestpath_cost_community_ignore=default
+      bestpath_med_confed=default
+      bestpath_med_missing_as_worst=default
+      bestpath_med_non_deterministic=default
+      enforce_first_as=default
+      fast_external_fallover=default
+      isolate=default
+      flush_routes=default
+      disable_policy_batching=default
+      graceful_restart_helper=default
+      log_neighbor_changes=default
+      neighbor_down_fib_accelerate=default
+      shutdown=default
+      suppress_fib_pending=default
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['bestpath_always_compare_med'] == false
+        - data.end_state['bestpath_aspath_multipath_relax'] == false
+        - data.end_state['bestpath_compare_neighborid'] == false
+        - data.end_state['bestpath_compare_routerid'] == false
+        - data.end_state['bestpath_cost_community_ignore'] == false
+        - data.end_state['bestpath_med_confed'] == false
+        - data.end_state['bestpath_med_missing_as_worst'] == false
+        - data.end_state['bestpath_med_non_deterministic'] == false
+        - data.end_state['enforce_first_as'] == true
+        - data.end_state['fast_external_fallover'] == true
+        - data.end_state['isolate'] == false
+        - data.end_state['flush_routes'] == false
+        - data.end_state['disable_policy_batching'] == false
+        - data.end_state['graceful_restart_helper'] == false
+        - data.end_state['log_neighbor_changes'] == false
+        - data.end_state['neighbor_down_fib_accelerate'] == false
+        - data.end_state['shutdown'] == false
+        - data.end_state['suppress_fib_pending'] == true
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      bestpath_always_compare_med=default
+      bestpath_aspath_multipath_relax=default
+      bestpath_compare_neighborid=default
+      bestpath_compare_routerid=default
+      bestpath_cost_community_ignore=default
+      bestpath_med_confed=default
+      bestpath_med_missing_as_worst=default
+      bestpath_med_non_deterministic=default
+      enforce_first_as=default
+      fast_external_fallover=default
+      isolate=default
+      flush_routes=default
+      disable_policy_batching=default
+      graceful_restart_helper=default
+      log_neighbor_changes=default
+      neighbor_down_fib_accelerate=default
+      shutdown=default
+      suppress_fib_pending=default
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure confederation id and peers
+    nxos_bgp:
+      asn=65535
+      confederation_id=20
+      confederation_peers="20 40"
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['confederation_id'] == '20'
+        - data.end_state['confederation_peers'] == ['20', '40']
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      confederation_id=20
+      confederation_peers="20 40"
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add a confederation peer
+    nxos_bgp:
+      asn=65535
+      confederation_peers=50
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['confederation_id'] == '20'
+        - data.end_state['confederation_peers'] == ['20', '40', '50']
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      confederation_peers=50
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure event-history param
+    nxos_bgp:
+      asn=65535
+      event_history_cli=size_medium
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['event_history_cli'] == 'medium'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      event_history_cli=size_medium
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure router_id, cluster_id and bgp timers
+    nxos_bgp:
+      asn=65535
+      router_id="1.1.1.1"
+      cluster_id=20
+      timer_bgp_hold=30
+      timer_bgp_keepalive=80
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['cluster_id'] == '20'
+        - data.end_state['router_id'] == '1.1.1.1'
+        - data.end_state['timer_bgp_hold'] == '80'
+        - data.end_state['timer_bgp_keepalive'] == '30'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      router_id="1.1.1.1"
+      cluster_id=20
+      timer_bgp_hold=30
+      timer_bgp_keepalive=80
+      host={{ inventory_hostname }}
+      state=present
+      transport=nxapi
+      username=admin
+      password=!cisco123!
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

@@ -378,7 +378,7 @@ PARAM_TO_COMMAND_KEYMAP = {
     'shutdown': 'shutdown',
     'suppress_fib_pending': 'suppress-fib-pending',
     'timer_bestpath_limit': 'timers bestpath-limit',
-    'timer_bgp': 'timers bgp',
+    'timer_bgp_fix': 'timers bgp',
     'vrf': 'vrf'
 }
 
@@ -499,7 +499,6 @@ def get_existing(module, args):
                 module.params['vrf'] != 'default'):
             msg = ("VRF {0} doesn't exist. ".format(module.params['vrf']))
             WARNINGS.append(msg)
-
     return existing
 
 
@@ -519,12 +518,12 @@ def apply_key_map(key_map, table):
 def state_present(module, existing, proposed, candidate):
     commands = list()
     if proposed.get('timer_bgp_hold') or proposed.get('timer_bgp_keepalive'):
-        proposed['timer_bgp'] = '{0} {1}'.format(proposed['timer_bgp_hold'],
+        proposed['timer_bgp_fix'] = '{0} {1}'.format(proposed['timer_bgp_hold'],
                                             proposed['timer_bgp_keepalive'])
         proposed.pop('timer_bgp_hold')
         proposed.pop('timer_bgp_keepalive')
     if existing.get('timer_bgp_hold') or existing.get('timer_bgp_keepalive'):
-        existing['timer_bgp'] = '{0} {1}'.format(existing['timer_bgp_hold'],
+        existing['timer_bgp_fix'] = '{0} {1}'.format(existing['timer_bgp_hold'],
                                             existing['timer_bgp_keepalive'])
         existing.pop('timer_bgp_hold')
         existing.pop('timer_bgp_keepalive')
