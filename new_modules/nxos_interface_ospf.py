@@ -48,6 +48,12 @@ options:
             - The cost associated with this cisco_interface_ospf instance.
         required: false
         default: null
+    state:
+        description:
+            - Determines whether the config should be present or not on the device.
+        required: false
+        default: present
+        choices: ['present','absent']
     m_facts:
         description:
             - Used to print module facts
