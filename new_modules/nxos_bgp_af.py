@@ -54,6 +54,16 @@ options:
         required: false
         choices: ['true','false']
         default: null
+    networks:
+        description:
+            - Networks to configure. Valid value is a list of network
+              prefixes to advertise. The list must be in the form of an array.
+              Each entry in the array must include a prefix address and an
+              optional route-map. Example: [['10.0.0.0/16', 'routemap_LA'],
+              ['192.168.1.1', 'Chicago'], ['192.168.2.0/24],
+              ['192.168.3.0/24', 'routemap_NYC']]
+        required: false
+        default: null
     state:
         description:
             - Determines whether the config should be present or not on the device.
@@ -314,6 +324,7 @@ def get_existing(module, args):
     else:
         WARNINGS.append("The BGP process {0} didn't exist but the task"
                         " just created it.".format(module.params['asn']))
+
     return existing
 
 
@@ -334,7 +345,6 @@ def state_present(module, existing, proposed, candidate):
     commands = list()
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
-
     for key, value in proposed_commands.iteritems():
         if key == 'address-family':
             addr_family_command = "address-family {0} {1}".format(
@@ -353,17 +363,40 @@ def state_present(module, existing, proposed, candidate):
 
             elif existing_commands.get(key):
                 existing_value = existing_commands.get(key)
-                commands.append('no {0} {1}'.format(key, existing_value))
+                if key == 'network':
+                    for network in existing_value:
+                        if len(network) == 2:
+                            commands.append('no network {0} route-map {1}'.format(
+                                    network[0], network[1]))
+                        elif len(network) == 1:
+                            commands.append('no network {0}'.format(
+                                    network[0]))
+                else:
+                    commands.append('no {0} {1}'.format(key, existing_value))
             else:
                 if key.replace(' ', '_').replace('-', '_') in BOOL_PARAMS:
                     commands.append('no {0}'.format(key))
         else:
-            command = '{0} {1}'.format(key, value)
-            commands.append(command)
+            if key == 'network':
+                existing_networks = existing.get('networks')
+
+                for inet in value:
+                    if not isinstance(inet, list):
+                        inet = [inet]
+
+                    if inet not in existing_networks:
+                        if len(inet) == 1:
+                            command = '{0} {1}'.format(key, inet[0])
+                        elif len(inet) == 2:
+                            command = '{0} {1} route-map {2}'.format(key,
+                                                            inet[0], inet[1])
+                        commands.append(command)
+            else:
+                command = '{0} {1}'.format(key, value)
+                commands.append(command)
 
     if commands:
         parents = ["router bgp {0}".format(module.params['asn'])]
-
         if module.params['vrf'] != 'default':
             parents.append('vrf {0}'.format(module.params['vrf']))
 
@@ -396,6 +429,7 @@ def main():
             safi=dict(required=True, type='str', choices=['unicast','multicast', 'evpn']),
             afi=dict(required=True, type='str', choices=['ipv4','ipv6', 'vpnv4', 'vpnv6', 'l2vpn']),
             advertise_l2vpn_evpn=dict(required=False, type='bool'),
+            networks=dict(required=False, type='list'),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
@@ -411,6 +445,7 @@ def main():
             module.fail_json(msg='It is not possible to advertise L2VPN '
                                  'EVPN in the default VRF. Please specify '
                                  'another one.', vrf=module.params['vrf'])
+
     args =  [
             "additional_paths_install",
             "additional_paths_receive",
@@ -464,6 +499,10 @@ def main():
     end_state = existing
     proposed_args = dict((k, v) for k, v in module.params.iteritems()
                     if v is not None and k in args)
+
+    if proposed_args.get('networks'):
+        if proposed_args['networks'][0] == 'default':
+            proposed_args['networks'] = 'default'
 
     proposed = {}
     for key, value in proposed_args.iteritems():
