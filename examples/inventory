@@ -1,0 +1,9 @@
+
+[all:vars]
+ansible_python_interprter=python
+un=cisco
+pwd=cisco
+
+[nxos]
+n9k1 asn=65535 router_id=1.1.1.1 ip=172.16.100.1 n_ip=172.16.100.2 n_asn=65512
+n9k2 asn=65512 router_id=2.2.2.2 ip=172.16.100.2 n_ip=172.16.100.1 n_asn=65535

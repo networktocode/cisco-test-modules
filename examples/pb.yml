@@ -1,0 +1,85 @@
+---
+
+  - name: BASE BGP
+    hosts: all
+    connection: local
+    gather_facts: no
+
+    vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+      loopbacks:
+        - { interface: loopback100, addr: 10.0.0.100 }
+        - { interface: loopback101, addr: 192.168.1.100 }
+        - { interface: loopback102, addr: 192.168.2.100 }
+        - { interface: loopback103, addr: 192.168.3.100 }
+
+    tasks:
+      - name: IP INFO
+        nxos_interface:
+          interface: Ethernet1/1
+          mode: layer3
+          provider: "{{ nxos_provider }}"
+
+      - name: IP INFO
+        nxos_interface:
+          interface: "{{ item.interface }}"
+          provider: "{{ nxos_provider }}"
+        with_items: "{{ loopbacks }}"
+
+
+      - name: IP ADDR
+        nxos_ip_interface:
+          interface: Ethernet1/1
+          addr: "{{ ip }}"
+          mask: 24
+          provider: "{{ nxos_provider }}"
+        tags: ip
+
+      - name: IP ADDR
+        nxos_ip_interface:
+          interface: "{{ item.interface }}"
+          addr: "{{ item.addr }}"
+          mask: 24
+          provider: "{{ nxos_provider }}"
+        with_items: "{{ loopbacks }}"
+        tags: ip
+
+      - name: ENSURE BGP ASN EXISTS
+        nxos_bgp:
+          asn: "{{ asn }}"
+          router_id: "{{ router_id }}"
+          provider: "{{ nxos_provider }}"
+          state: absent
+        tags: remove
+
+      - name: BASE AF CONFIG
+        nxos_bgp_af:
+          asn: "{{ asn }}"
+          afi: ipv4
+          safi: unicast
+          networks:
+            - ['10.0.0.0/16']
+            - ['192.168.1.0/24']
+            - ['192.168.2.0/24']
+            - ['192.168.3.0/24']
+          provider: "{{ nxos_provider }}"
+
+      - name: BASE NEIGHBOR CONFIG
+        nxos_bgp_neighbor:
+          asn: "{{ asn }}"
+          neighbor: "{{ n_ip }}"
+          remote_as: "{{ n_asn }}"
+          provider: "{{ nxos_provider }}"
+
+      - name: NEIGHBOR ADDRESS FAMILY
+        nxos_bgp_neighbor_af:
+          asn: "{{ asn }}"
+          neighbor: "{{ n_ip }}"
+          afi: ipv4
+          safi: unicast
+          provider: "{{ nxos_provider }}"
