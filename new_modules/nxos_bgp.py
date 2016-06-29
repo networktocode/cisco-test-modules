@@ -737,26 +737,27 @@ def main():
 
     end_state = existing
     proposed_args = dict((k, v) for k, v in module.params.iteritems()
-                    if v is not None and k in args and k != 'asn' and
-                    k != 'vrf')
+                    if v is not None and k in args)
     proposed = {}
     for key, value in proposed_args.iteritems():
-        if value.lower() == 'true':
-            value = True
-        elif value.lower() == 'false':
-            value = False
-        elif value.lower() == 'default':
-            value = PARAM_TO_DEFAULT_KEYMAP.get(key)
-            if value is None:
-                if key in BOOL_PARAMS:
-                    value = False
-                else:
-                    value = 'default'
-        if existing.get(key) or (not existing.get(key) and value):
-            proposed[key] = value
+        if key != 'asn' and key != 'vrf':
+            if value.lower() == 'true':
+                value = True
+            elif value.lower() == 'false':
+                value = False
+            elif value.lower() == 'default':
+                value = PARAM_TO_DEFAULT_KEYMAP.get(key)
+                if value is None:
+                    if key in BOOL_PARAMS:
+                        value = False
+                    else:
+                        value = 'default'
+            if existing.get(key) or (not existing.get(key) and value):
+                proposed[key] = value
 
     result = {}
-    if state == 'present' or (state == 'absent' and existing):
+    if (state == 'present' or (state == 'absent' and
+            existing.get('asn') == module.params['asn'])):
         candidate = NetworkConfig(indent=3)
         invoke('state_%s' % state, module, existing, proposed, candidate)
 

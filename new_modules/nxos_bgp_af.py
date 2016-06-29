@@ -312,8 +312,8 @@ def get_existing(module, args):
             existing['safi'] = module.params['safi']
             existing['vrf'] = module.params['vrf']
     else:
-        WARNINGS.append("The BGP process didn't exist but the task"
-                        " just created it.")
+        WARNINGS.append("The BGP process {0} didn't exist but the task"
+                        " just created it.".format(module.params['asn']))
     return existing
 
 

@@ -123,7 +123,7 @@ changed:
 
 def execute_config_command(commands, module):
     try:
-        body = module.configure(commands)
+        body = module.config(commands)
     except ShellError, clie:
         module.fail_json(msg='Error sending CLI commands',
                          error=str(clie), commands=commands)
@@ -154,8 +154,8 @@ def get_cli_body_ssh(command, response, module):
 
 def execute_show(cmds, module, command_type=None):
     try:
-        response = module.execute(cmds,
-            command_type=command_type) if command_type else module.execute(cmds)
+        response = module.cli(cmds,
+            command_type=command_type) if command_type else module.cli(cmds)
     except ShellError, clie:
         module.fail_json(msg='Error sending {0}'.format(cmds),
                          error=str(clie))
