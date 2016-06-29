@@ -220,7 +220,7 @@ def state_present(module, existing, proposed, candidate):
             commands.append('no {0}'.format(key))
 
         elif value == 'default':
-            if key == 'send-community' and existing_commands[key] == 'none':
+            if key == 'send-community' and existing_commands.get(key) == 'none':
                 commands.append('no {0}'.format(key))
 
             elif existing_commands.get(key):
