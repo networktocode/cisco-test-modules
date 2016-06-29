@@ -27,6 +27,9 @@ description:
 author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
+    - The module is used to manage NVE properties, not to create NVE
+      interfaces. Use nxos_interface if you wish to do so.
+    - State 'absent' removes the interface
     - 'default' restores params default value
 options:
     interface:
@@ -85,7 +88,10 @@ EXAMPLES = '''
     shutdown=default
 '''
 
-ACCEPTED = ['true','false', 'default']
+
+BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
+BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
+ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE + ['default']
 BOOL_PARAMS = [
     'shutdown',
     'host_reachability'
@@ -115,21 +121,40 @@ def invoke(name, *args, **kwargs):
 def get_value(arg, config, module):
     if arg in BOOL_PARAMS:
         REGEX = re.compile(r'\s+{0}\s*$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
+        NO_SHUT_REGEX = re.compile(r'\s+no shutdown\s*$', re.M)
         value = False
-        try:
-            if REGEX.search(config):
-                value = True
-        except TypeError:
-            value = False
+        if arg == 'shutdown':
+            try:
+                if NO_SHUT_REGEX.search(config):
+                    value = False
+                elif REGEX.search(config):
+                    value = True
+            except TypeError:
+                value = False
+        else:
+            try:
+                if REGEX.search(config):
+                    value = True
+            except TypeError:
+                value = False
     else:
         REGEX = re.compile(r'(?:{0}\s)(?P<value>.*)$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
         NO_DESC_REGEX = re.compile(r'\s+{0}\s*$'.format('no description'), re.M)
+        SOURCE_INTF_REGEX = re.compile(r'(?:{0}\s)(?P<value>\S+)$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
         value = ''
         if arg == 'description':
             if NO_DESC_REGEX.search(config):
                 value = ''
             elif PARAM_TO_COMMAND_KEYMAP[arg] in config:
                 value = REGEX.search(config).group('value').strip()
+        elif arg == 'source_interface':
+            for line in config.splitlines():
+                try:
+                    if PARAM_TO_COMMAND_KEYMAP[arg] in config:
+                        value = SOURCE_INTF_REGEX.search(config).group('value').strip()
+                        break
+                except AttributeError:
+                    value = ''
         else:
             if PARAM_TO_COMMAND_KEYMAP[arg] in config:
                 value = REGEX.search(config).group('value').strip()
@@ -164,11 +189,34 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
+def fix_commands(commands, module):
+    source_interface_command = ''
+    no_source_interface_command = ''
+
+    for command in commands:
+        if 'no source-interface hold-down-time' in command:
+            pass
+        elif 'source-interface hold-down-time' in command:
+            pass
+        elif 'no source-interface' in command:
+            no_source_interface_command = command
+        elif 'source-interface' in command:
+            source_interface_command = command
+
+    if source_interface_command:
+        commands.pop(commands.index(source_interface_command))
+        commands.insert(0, source_interface_command)
+
+    if no_source_interface_command:
+        commands.pop(commands.index(no_source_interface_command))
+        commands.append(no_source_interface_command)
+    return commands
+
+
 def state_present(module, existing, proposed, candidate):
     commands = list()
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
-
     for key, value in proposed_commands.iteritems():
         if value is True:
             commands.append(key)
@@ -180,15 +228,16 @@ def state_present(module, existing, proposed, candidate):
             if existing_commands.get(key):
                 existing_value = existing_commands.get(key)
                 commands.append('no {0} {1}'.format(key, existing_value))
-
             else:
                 if key.replace(' ', '_').replace('-', '_') in BOOL_PARAMS:
                     commands.append('no {0}'.format(key.lower()))
+                    module.exit_json(commands=commands)
         else:
             command = '{0} {1}'.format(key, value.lower())
             commands.append(command)
 
     if commands:
+        commands = fix_commands(commands, module)
         parents = ['interface {0}'.format(module.params['interface'].lower())]
         candidate.add(commands, parents=parents)
 
@@ -215,6 +264,7 @@ def main():
                         supports_check_mode=True)
 
     state = module.params['state']
+    interface = module.params['interface'].lower()
 
     args =  [
             'interface',

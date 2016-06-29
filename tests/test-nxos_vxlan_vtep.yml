@@ -1,0 +1,146 @@
+---
+
+- name: TESTING NXOS_VXLAN_VTEP
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: remove nve interface
+    nxos_vxlan_vtep:
+      interface: nve1
+      state: absent
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: prepare the device
+    nxos_vxlan_vtep:
+      interface: nve1
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: configure nve interface properties
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "simple description"
+      host_reachability: true
+      source_interface: loopback0
+      source_interface_hold_down_time: 30
+      shutdown: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['description'] == 'simple description'
+        - data.end_state['host_reachability'] == true
+        - data.end_state['source_interface'] == 'loopback0'
+        - data.end_state['source_interface_hold_down_time'] == '30'
+        - data.end_state['shutdown'] == true
+
+  - name: idempotency check
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "simple description"
+      host_reachability: true
+      source_interface: loopback0
+      source_interface_hold_down_time: 30
+      shutdown: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: modify interface properties
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "another simple description"
+      host_reachability: false
+      source_interface: loopback0
+      source_interface_hold_down_time: 50
+      shutdown: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['description'] == 'another simple description'
+        - data.end_state['host_reachability'] == false
+        - data.end_state['source_interface'] == 'loopback0'
+        - data.end_state['source_interface_hold_down_time'] == '50'
+        - data.end_state['shutdown'] == false
+
+  - name: idempotency check
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "another simple description"
+      host_reachability: false
+      source_interface: loopback0
+      source_interface_hold_down_time: 50
+      shutdown: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set interface properties to their defaults
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: default
+      host_reachability: default
+      source_interface: default
+      source_interface_hold_down_time: default
+      shutdown: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['description'] == ''
+        - data.end_state['host_reachability'] == false
+        - data.end_state['source_interface'] == ''
+        - data.end_state['source_interface_hold_down_time'] == ''
+        - data.end_state['shutdown'] == true
+
+  - name: idempotency check
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: default
+      host_reachability: default
+      source_interface: default
+      source_interface_hold_down_time: default
+      shutdown: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
