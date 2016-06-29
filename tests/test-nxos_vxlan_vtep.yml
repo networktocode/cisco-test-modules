@@ -21,8 +21,6 @@
       provider: "{{ nxos_provider }}"
     register: data
 
-  - debug: var=data
-
   - name: prepare the device
     nxos_vxlan_vtep:
       interface: nve1
