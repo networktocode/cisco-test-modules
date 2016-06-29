@@ -13,8 +13,8 @@
       host={{ inventory_hostname }}
       state=absent
       transport=nxapi
-      username=admin
-      password=!cisco123!
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -24,8 +24,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password=!cisco123!
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -39,8 +39,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -62,8 +62,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -81,8 +81,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -103,8 +103,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -122,8 +122,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -144,8 +144,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=cli
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -163,8 +163,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=nxapi
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -184,8 +184,8 @@
       host={{ inventory_hostname }}
       state=present
       transport=cli
-      username=admin
-      password="!cisco123!"
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
 
@@ -199,7 +199,7 @@
       host={{ inventory_hostname }}
       state=absent
       transport=nxapi
-      username=admin
-      password=!cisco123!
+      username={{ un }}
+      password={{ pwd }}
       m_facts=true
     register: data
