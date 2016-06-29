@@ -380,6 +380,9 @@ def state_present(module, existing, proposed, candidate):
             if key == 'network':
                 existing_networks = existing.get('networks')
 
+                if not existing_networks:
+                    existing_networks = []
+
                 for inet in value:
                     if not isinstance(inet, list):
                         inet = [inet]
