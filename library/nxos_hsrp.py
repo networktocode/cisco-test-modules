@@ -152,17 +152,20 @@ def get_cli_body_ssh(command, response, module):
     return body
 
 
-def execute_show(cmds, module, command_type=None):
+def execute_show(cmds, module, output=None):
     try:
-        response = module.cli(cmds,
-            command_type=command_type) if command_type else module.cli(cmds)
-    except ShellError, clie:
-        module.fail_json(msg='Error sending {0}'.format(cmds),
+        if execute_show:
+            response = module.cli(cmds, output=output)
+        else:
+            response = module.cli(cmds)
+    except ShellError:
+        clie = get_exception()
+        module.fail_json(msg='Error sending {0}'.format(command),
                          error=str(clie))
     return response
 
 
-def execute_show_command(command, module, command_type='cli_show'):
+def execute_show_command(command, module, output='json'):
     if module.params['transport'] == 'cli':
         command += ' | json'
         cmds = [command]
@@ -170,7 +173,7 @@ def execute_show_command(command, module, command_type='cli_show'):
         body = get_cli_body_ssh(command, response, module)
     elif module.params['transport'] == 'nxapi':
         cmds = [command]
-        body = execute_show(cmds, module, command_type=command_type)
+        body = execute_show(cmds, module, output=output)
 
     return body
 
