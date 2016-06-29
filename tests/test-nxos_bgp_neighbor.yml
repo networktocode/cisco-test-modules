@@ -30,7 +30,7 @@
     register: data
 
   - name: add a bgp neighbor
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       description="testing description"
@@ -53,7 +53,7 @@
         - data.end_state['update_source'] == 'loopback0'
 
   - name: idempotency check
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       description="testing description"
@@ -72,7 +72,7 @@
         - data.changed == false
 
   - name: set properties to their defaults
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       description=default
@@ -94,7 +94,7 @@
         - data.end_state['update_source'] == ''
 
   - name: idempotency check
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       description=default
@@ -113,7 +113,7 @@
         - data.changed == false
 
   - name: add a neighbor for vrf test
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       vrf=test
@@ -135,7 +135,7 @@
         - data.end_state['remote_as'] == '20'
 
   - name: idempotency check
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       vrf=test
@@ -154,7 +154,7 @@
         - data.changed == false
 
   - name: change remote-as and shutdown
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       vrf=test
@@ -175,7 +175,7 @@
         - data.end_state['shutdown'] == true
 
   - name: idempotency check
-    cisco_bgp_neighbor:
+    nxos_bgp_neighbor:
       asn=65535
       neighbor=2.2.2.2
       vrf=test
