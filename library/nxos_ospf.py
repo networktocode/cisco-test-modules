@@ -44,7 +44,7 @@ options:
         choices: ['true','false']
 '''
 EXAMPLES = '''
-- nxos_ospf:
+- nxos_vxlan_vtep:
     ospf=ntc
 '''
 
@@ -63,12 +63,19 @@ def invoke(name, *args, **kwargs):
 def get_value(config, module):
     splitted_config = config.splitlines()
     value_list = []
-    REGEX = re.compile(r'(?:router ospf\s)(?P<value>.*)$', re.M)
+    REGEX = '^router ospf\s(?P<ospf>\S+).*'
     for line in splitted_config:
         value = ''
         if 'router ospf' in line:
-            value = REGEX.search(line).group('value')
-            value_list.append(value)
+            try:
+                match_ospf = re.match(REGEX, line, re.DOTALL)
+                ospf_group = match_ospf.groupdict()
+                value = ospf_group['ospf']
+            except AttributeError:
+                value = ''
+            if value:
+                value_list.append(value)
+
     return value_list
 
 
@@ -123,13 +130,13 @@ def main():
     end_state = existing
     proposed = dict(ospf=ospf)
 
-    if existing:
-        existing_string = ' '.join(existing['ospf'])
+    if not existing:
+        existing_list = []
     else:
-        existing_string = ''
+        existing_list = existing['ospf']
 
     result = {}
-    if (state == 'present' or (state == 'absent' and ospf in existing_string)):
+    if (state == 'present' or (state == 'absent' and ospf in existing_list)):
         candidate = NetworkConfig(indent=3)
         invoke('state_%s' % state, module, proposed, candidate)
 

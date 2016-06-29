@@ -1,0 +1,118 @@
+---
+
+- name: TESTING NXOS_OSPF
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: prepare the device
+    nxos_ospf:
+      ospf: 1
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - name: create ospf process
+    nxos_ospf:
+      ospf: 1
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_ospf:
+      ospf: 1
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add ospf process
+    nxos_ospf:
+      ospf: 10
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_ospf:
+      ospf: 10
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove ospf process
+    nxos_ospf:
+      ospf: 1
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_ospf:
+      ospf: 1
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove ospf process
+    nxos_ospf:
+      ospf: 10
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_ospf:
+      ospf: 10
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

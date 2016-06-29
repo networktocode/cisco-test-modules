@@ -1,0 +1,105 @@
+---
+
+- name: TESTING NXOS_OVERLAY_GLOBAL
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: set anycast gateway mac using E.E.E form
+    nxos_overlay_global:
+      anycast_gateway_mac: "e.e.e"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['anycast_gateway_mac'] == '000E.000E.000E'
+
+  - name: idempotency check
+    nxos_overlay_global:
+      anycast_gateway_mac: "e.e.e"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set anycast gateway mac using EE:EE:EE:EE:EE:EE form
+    nxos_overlay_global:
+      anycast_gateway_mac: "12:34:56:78:9a:bc"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['anycast_gateway_mac'] == '1234.5678.9ABC'
+
+  - name: idempotency check
+    nxos_overlay_global:
+      anycast_gateway_mac: "12:34:56:78:9a:bc"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set anycast gateway mac using EE-EE-EE-EE-EE-EE form
+    nxos_overlay_global:
+      anycast_gateway_mac: "12:34:56:78:CD:EF"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['anycast_gateway_mac'] == '1234.5678.CDEF'
+
+  - name: idempotency check
+    nxos_overlay_global:
+      anycast_gateway_mac: "12:34:56:78:CD:EF"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove anycast gateway mac
+    nxos_overlay_global:
+      anycast_gateway_mac: "default"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['anycast_gateway_mac'] == ''
+
+  - name: idempotency check
+    nxos_overlay_global:
+      anycast_gateway_mac: "default"
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

@@ -1,0 +1,116 @@
+---
+
+- name: TESTING NXOS_VXLAN_VTEP_VNI
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: remove nve interface
+    nxos_vxlan_vtep:
+      interface: nve1
+      state: absent
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: prepare the device
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "configured with Ansible"
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: associate vni to nve interface
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['vni'] == '6000'
+        - data.end_state['ingress_replication'] == ''
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ingress-replication bgp
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: bgp
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['vni'] == '6000'
+        - data.end_state['ingress_replication'] == 'bgp'
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: bgp
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove vni
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: bgp
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state == {}
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: bgp
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
