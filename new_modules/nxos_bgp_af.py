@@ -314,7 +314,6 @@ def get_existing(module, args):
     else:
         WARNINGS.append("The BGP process didn't exist but the task"
                         " just created it.")
-
     return existing
 
 
@@ -332,9 +331,6 @@ def apply_key_map(key_map, table):
 
 
 def state_present(module, existing, proposed, candidate):
-    if not existing:
-        WARNINGS.append("The BGP process didn't exist but the task"
-                        " just created it.")
     commands = list()
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)

@@ -80,7 +80,7 @@ options:
         choices: ['true','false']
 '''
 EXAMPLES = '''
-- cisco_bgp_neighbor:
+- cisco_bgp_neighbor_af:
     asn=65535
     neighbor=2.2.2.2
     afi=ipv4
@@ -89,6 +89,7 @@ EXAMPLES = '''
     state: present
 '''
 
+WARNINGS = []
 ACCEPTED = ['true','false', 'default']
 BOOL_PARAMS = [
     'route_reflector_client'
@@ -177,6 +178,9 @@ def get_existing(module, args):
             existing['vrf'] = module.params['vrf']
             existing['afi'] = module.params['afi']
             existing['safi'] = module.params['safi']
+    else:
+        WARNINGS.append("The BGP process didn't exist but the task"
+                        " just created it.")
 
     return existing
 
@@ -344,6 +348,9 @@ def main():
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args
+
+    if WARNINGS:
+        result['warnings'] = WARNINGS
 
     module.exit_json(**result)
 

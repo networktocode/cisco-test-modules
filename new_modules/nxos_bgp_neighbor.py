@@ -89,7 +89,7 @@ options:
 '''
 EXAMPLES = '''
 # create a new neighbor
-- cisco_bgp_neighbor:
+- nxos_bgp_neighbor:
     asn: 65535
     neighbor: 3.3.3.3
     local_as: 20
@@ -100,7 +100,7 @@ EXAMPLES = '''
     state: present
 '''
 
-
+WARNINGS = []
 BOOL_PARAMS = [
     'shutdown'
 ]
@@ -170,6 +170,9 @@ def get_existing(module, args):
             existing['asn'] = existing_asn
             existing['neighbor'] = module.params['neighbor']
             existing['vrf'] = module.params['vrf']
+    else:
+        WARNINGS.append("The BGP process didn't exist but the task"
+                        " just created it.")
 
     return existing
 
@@ -323,6 +326,9 @@ def main():
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args
+
+    if WARNINGS:
+        result['warnings'] = WARNINGS
 
     module.exit_json(**result)
 
