@@ -497,7 +497,7 @@ def main():
                         command = get_config_ip_commands(proposed, interface,
                                                          existing, version)
                         commands.append(command)
-    module.exit_json(c=commands)
+
     cmds = flatten_list(commands)
     if cmds:
         if module.check_mode:
