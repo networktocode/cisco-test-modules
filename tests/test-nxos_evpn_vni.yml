@@ -20,7 +20,6 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
-    tags: meh
 
   - name: create EVPN VNI and configure RD
     nxos_evpn_vni:
@@ -40,6 +39,33 @@
     nxos_evpn_vni:
       vni: 6000
       route_distinguisher: "60:10"
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: change RD value
+    nxos_evpn_vni:
+      vni: 6000
+      route_distinguisher: "70:10"
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['route_distinguisher'] == '70:10'
+
+  - name: idempotency check
+    nxos_evpn_vni:
+      vni: 6000
+      route_distinguisher: "70:10"
       state: present
       provider: "{{ nxos_provider }}"
       m_facts: true

@@ -102,6 +102,8 @@ PARAM_TO_COMMAND_KEYMAP = {
 }
 WARNINGS = []
 
+import time
+
 def invoke(name, *args, **kwargs):
     func = globals().get(name)
     if func:
@@ -165,18 +167,9 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
-def state_present(module, existing, proposed, candidate):
+def state_present(module, existing, proposed):
     commands = list()
-
-    if (existing.get('route_distinguisher') and
-            proposed.get('route_distinguisher')):
-        if (existing['route_distinguisher'] != proposed[
-            'route_distinguisher'] and
-            proposed['route_distinguisher'] != 'default'):
-            module.fail_json(msg='EVPN RD cannot be overrid. You have to '
-                                 'remove it first (using default as value) '
-                                 'and configure it again.')
-
+    parents = list()
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
 
@@ -208,13 +201,25 @@ def state_present(module, existing, proposed, candidate):
 
     if commands:
         parents = ['evpn', 'vni {0} l2'.format(module.params['vni'])]
-        candidate.add(commands, parents=parents)
+
+    return commands, parents
 
 
-def state_absent(module, existing, proposed, candidate):
+def state_absent(module, existing, proposed):
     commands = ['no vni {0} l2'.format(module.params['vni'])]
     parents = ['evpn']
-    candidate.add(commands, parents=parents)
+    return commands, parents
+
+
+def execute_config(module, candidate):
+    result = {}
+    try:
+        response = load_config(module, candidate)
+        result.update(response)
+    except NetworkError:
+        exc = get_exception()
+        module.fail_json(msg=str(exc))
+    return result
 
 
 def main():
@@ -255,18 +260,32 @@ def main():
                 value = False
             if existing.get(key) or (not existing.get(key) and value):
                 proposed[key] = value
-
     result = {}
     if state == 'present' or (state == 'absent' and existing):
         candidate = NetworkConfig(indent=3)
-        invoke('state_%s' % state, module, existing, proposed, candidate)
+        commands, parents = invoke('state_%s' % state, module, existing,
+                                                proposed)
+        if commands:
+            if (existing.get('route_distinguisher') and
+                    proposed.get('route_distinguisher')):
+                if (existing['route_distinguisher'] != proposed[
+                    'route_distinguisher'] and
+                    proposed['route_distinguisher'] != 'default'):
+                    WARNINGS.append('EVPN RD {0} was automatically removed. '
+                                         'It is highly recommended to use a task '
+                                         '(with default as value) to explicitly '
+                                         'unconfigure it.'.format(
+                                            existing['route_distinguisher']))
+                    remove_commands = ['no rd {0}'.format(
+                                            existing['route_distinguisher'])]
 
-        try:
-            response = load_config(module, candidate)
-            result.update(response)
-        except NetworkError:
-            exc = get_exception()
-            module.fail_json(msg=str(exc))
+                    candidate.add(remove_commands, parents=parents)
+                    result = execute_config(module, candidate)
+                    time.sleep(15)
+
+            candidate = NetworkConfig(indent=3)
+            candidate.add(commands, parents=parents)
+            result = execute_config(module, candidate)
     else:
         result['updates'] = []
 
