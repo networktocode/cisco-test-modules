@@ -153,7 +153,7 @@ def main():
                             'ASN:{0}'.format(existing.get('asn')))
 
     bgp_neighbor_facts = dict(bgp_neighbor_facts=existing)
-    module.exit_json(ansible_facts=bgp_bgp_neighbor_facts,
+    module.exit_json(ansible_facts=bgp_neighbor_facts,
                      changed=False,
                      warnings=WARNINGS)
 
