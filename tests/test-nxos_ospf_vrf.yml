@@ -1,0 +1,104 @@
+---
+
+- name: TESTING NXOS_OSPF_VRF
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: prepare the device
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: "2.2.2.2"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: absent
+    register: data
+
+  - name: configure router-id for OSPF 1
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: "2.2.2.2"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['router_id'] == '2.2.2.2'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: "2.2.2.2"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: change router-id for OSPF 1
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: "3.3.3.3"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['router_id'] == '3.3.3.3'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: "3.3.3.3"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove router-id for OSPF 1
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['router_id'] == ''
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      router_id: ""
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

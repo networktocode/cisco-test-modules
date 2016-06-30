@@ -1,0 +1,122 @@
+---
+
+- name: TESTING NXOS_VXLAN_VTEP_VNI
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: prepare the device
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "1"
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - name: configure OSPF inside interface
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "1"
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - debug: var=data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.1'
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "1"
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure OSPF cost
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "1"
+      cost: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.1'
+        - data.end_state['cost'] == '50'
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "1"
+      cost: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: change OSPF area
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      cost: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['cost'] == '50'
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      cost: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

@@ -28,6 +28,8 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - 'default' restores params default value
+    - RD override is not permitted. You should set it to the defalt values
+      first and then reconfigure it.
     - route_target_both, route_target_import and route_target_export valid
       values are a list of extended communities, (i.e. ['1.2.3.4:5', '33:55'])
       or the keywords 'auto' or 'default'.
@@ -98,7 +100,7 @@ PARAM_TO_COMMAND_KEYMAP = {
     'route_target_export': 'route-target export',
     'route_distinguisher': 'rd'
 }
-
+WARNINGS = []
 
 def invoke(name, *args, **kwargs):
     func = globals().get(name)
@@ -140,7 +142,12 @@ def get_existing(module, args):
                     existing[arg] = get_value(arg, config, module)
                 else:
                     existing[arg] = get_route_target_value(arg, config, module)
-        existing['vni'] = module.params['vni']
+
+        existing_fix = dict((k, v) for k, v in existing.iteritems() if v)
+        if existing_fix:
+            existing['vni'] = module.params['vni']
+        else:
+            existing = existing_fix
 
     return existing
 
@@ -160,6 +167,16 @@ def apply_key_map(key_map, table):
 
 def state_present(module, existing, proposed, candidate):
     commands = list()
+
+    if (existing.get('route_distinguisher') and
+            proposed.get('route_distinguisher')):
+        if (existing['route_distinguisher'] != proposed[
+            'route_distinguisher'] and
+            proposed['route_distinguisher'] != 'default'):
+            module.fail_json(msg='EVPN RD cannot be overrid. You have to '
+                                 'remove it first (using default as value) '
+                                 'and configure it again.')
+
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
 
@@ -259,6 +276,9 @@ def main():
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args
+
+    if WARNINGS:
+        result['warnings'] = WARNINGS
 
     module.exit_json(**result)
 
