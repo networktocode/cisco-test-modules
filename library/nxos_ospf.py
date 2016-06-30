@@ -44,7 +44,7 @@ options:
         choices: ['true','false']
 '''
 EXAMPLES = '''
-- nxos_vxlan_vtep:
+- nxos_ospf:
     ospf=ntc
 '''
 

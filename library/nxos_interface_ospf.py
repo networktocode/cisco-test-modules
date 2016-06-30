@@ -62,7 +62,8 @@ options:
         choices: ['true','false']
 '''
 EXAMPLES = '''
-- interface=ethernet1/32
+- nxos_interface_ospf:
+    interface=ethernet1/32
     ospf=1
     area=1
     cost=default
