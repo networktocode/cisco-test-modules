@@ -152,7 +152,7 @@ def main():
             WARNINGS.append('Another BGP ASN exists on the device.  '
                             'ASN:{0}'.format(existing.get('asn')))
 
-    bgp_bgp_neighbor_facts = dict(bgp_bgp_neighbor_facts=existing)
+    bgp_neighbor_facts = dict(bgp_neighbor_facts=existing)
     module.exit_json(ansible_facts=bgp_bgp_neighbor_facts,
                      changed=False,
                      warnings=WARNINGS)
