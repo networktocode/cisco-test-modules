@@ -203,10 +203,12 @@ def validate_feature(module, mode='show'):
 
     feature_to_be_mapped = {
         'show': {
-                'nv overlay': 'nve'},
+                'nv overlay': 'nve',
+                'vn-segment-vlan-based': 'vnseg_vlan'},
         'config':
                 {
-                'nve': 'nv overlay'}
+                'nve': 'nv overlay',
+                'vnseg_vlan': 'vn-segment-vlan-based'}
         }
 
     if feature in feature_to_be_mapped[mode]:
