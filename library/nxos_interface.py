@@ -524,7 +524,7 @@ def get_cli_body_ssh(command, response, module):
 
 def execute_show(cmds, module, output=None):
     try:
-        if execute_show:
+        if output:
             response = module.cli(cmds, output=output)
         else:
             response = module.cli(cmds)
