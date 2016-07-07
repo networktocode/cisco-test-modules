@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_neighbor
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve BGP neighbors configuration
 description:
     - Retrieve BGP neighbors configurations on NX-OS switches
@@ -47,7 +47,7 @@ EXAMPLES = '''
 # create a new neighbor
 - nxos_bgp_neighbor_facts:
     asn=65535
-    neighbor=2.2.2.2
+    neighbor=2.1.2.1
     vrf=test
 '''
 

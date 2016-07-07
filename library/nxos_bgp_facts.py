@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve BGP configuration
 description:
     - Retrieve BGP configurations on NX-OS switches

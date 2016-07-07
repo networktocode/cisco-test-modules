@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_neighbor
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages BGP neighbors configurations
 description:
     - Manages BGP neighbors configurations on NX-OS switches

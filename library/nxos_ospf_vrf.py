@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_ospf_vrf
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages a VRF for an OSPF router.
 description:
     - Manages a VRF for an OSPF router.
@@ -54,7 +54,7 @@ options:
 EXAMPLES = '''
 - nxos_ospf_vrf:
     ospf: 1
-    router_id: "2.2.2.2"
+    router_id: "2.1.2.1"
 '''
 
 # COMMON CODE FOR MIGRATION

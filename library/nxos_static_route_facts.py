@@ -19,7 +19,7 @@ DOCUMENTATION = '''
 ---
 
 module: nxos_static_route_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve static route configuration
 description:
     - Retrieve static route configuration

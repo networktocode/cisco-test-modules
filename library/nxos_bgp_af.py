@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_af
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages BGP Address-family configuration
 description:
     - Manages BGP Address-family configurations on NX-OS switches

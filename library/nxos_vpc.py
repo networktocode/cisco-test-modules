@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vpc
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages global VPC configuration
 description:
     - Manages global VPC configuration

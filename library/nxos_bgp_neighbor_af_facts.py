@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_neighbor_af_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retireve BGP address-family's neighbors configuration
 description:
     - Retireve BGP address-family's neighbors configurations on NX-OS switches
@@ -56,7 +56,7 @@ options:
 EXAMPLES = '''
 - nxos_bgp_neighbor_af_facts:
     asn=65512
-    neighbor=2.2.2.2
+    neighbor=2.1.2.1
     afi=ipv4
     safi=unicast
 '''

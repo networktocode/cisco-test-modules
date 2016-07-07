@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_evpn_global
-version_added: "2.2"
+version_added: "2.1"
 short_description: Handles the EVPN control plane for VXLAN.
 description:
     - Handles the EVPN control plane for VXLAN.

@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_evpn_vni
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages Cisco EVPN VXLAN Network Identifier (VNI)
 description:
     - Manages Cisco Ethernet Virtual Private Network (EVPN) VXLAN Network

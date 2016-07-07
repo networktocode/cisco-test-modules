@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vpc_interface
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages interface VPC configuration
 description:
     - Manages interface VPC configuration

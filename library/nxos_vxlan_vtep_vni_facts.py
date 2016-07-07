@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vxlan_vtep_vni_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve Virtual Network Identifier (VNI) configuration
 description:
     - Retrieve Virtual Network Identifier (VNI) configuration

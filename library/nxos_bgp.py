@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages BGP configuration
 description:
     - Manages BGP configurations on NX-OS switches

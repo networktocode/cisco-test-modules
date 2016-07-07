@@ -20,7 +20,7 @@ DOCUMENTATION = '''
 ---
 
 module: nxos_portchannel
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages port-channel interfaces
 description:
     - Manages port-channel specific configuration parameters

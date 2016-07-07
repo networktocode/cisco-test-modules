@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_interface_ospf
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages configuration of an OSPF interface instance.
 description:
     - Manages configuration of an OSPF interface instance.

@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_ospf_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve a list of all ospf instances.
 description:
     - Retrieve configuration of an ospf instance.

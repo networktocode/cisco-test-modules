@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vxlan_vtep
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages VXLAN Network Virtualization Endpoint (NVE)
 description:
     - Manages VXLAN Network Virtualization Endpoint (NVE) overlay interface

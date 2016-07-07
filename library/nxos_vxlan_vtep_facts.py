@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vxlan_vtep_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve VXLAN Network Virtualization Endpoint (NVE)
 description:
     - Retrieve VXLAN Network Virtualization Endpoint (NVE) overlay interface

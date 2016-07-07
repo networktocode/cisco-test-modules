@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_interface_ospf_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve configuration of an OSPF interface instance.
 description:
     - Retrieve configuration of an OSPF interface instance.

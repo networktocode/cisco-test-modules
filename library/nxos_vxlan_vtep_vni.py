@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_vxlan_vtep_vni
-version_added: "2.2"
+version_added: "2.1"
 short_description: Creates a Virtual Network Identifier member (VNI)
 description:
     - Creates a Virtual Network Identifier member (VNI) for an NVE

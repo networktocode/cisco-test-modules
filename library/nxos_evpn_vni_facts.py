@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_evpn_vni_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve Cisco EVPN VXLAN Network Identifier (VNI)
 description:
     - Retrieve Cisco Ethernet Virtual Private Network (EVPN) VXLAN Network

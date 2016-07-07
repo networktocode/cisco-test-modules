@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_ospf_vrf_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve VRF configuration for an OSPF router.
 description:
     - Retrieve VRF configuration for an OSPF router.

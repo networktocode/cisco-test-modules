@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_overlay_global
-version_added: "2.2"
+version_added: "2.1"
 short_description: Handles the detection of duplicate IP or MAC addresses
 description:
     - Handles the detection of duplicate IP or MAC addresses based on the

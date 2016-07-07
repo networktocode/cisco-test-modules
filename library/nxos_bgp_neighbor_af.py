@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_neighbor_af
-version_added: "2.2"
+version_added: "2.1"
 short_description: Manages BGP address-family's neighbors configuration
 description:
     - Manages BGP address-family's neighbors configurations on NX-OS switches
@@ -82,7 +82,7 @@ options:
 EXAMPLES = '''
 - cisco_bgp_neighbor_af:
     asn=65535
-    neighbor=2.2.2.2
+    neighbor=2.1.2.1
     afi=ipv4
     safi=multicast
     send_community=both

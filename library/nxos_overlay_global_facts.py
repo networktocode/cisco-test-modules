@@ -19,7 +19,7 @@
 DOCUMENTATION = '''
 ---
 module: nxos_overlay_global_facts
-version_added: "2.2"
+version_added: "2.1"
 short_description: Retrieve overlay global configuration.
 description:
     - Retrieve overlay global configuration.
