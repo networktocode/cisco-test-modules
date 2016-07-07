@@ -45,6 +45,19 @@ options:
         required: false
         default: up
         choices: ['up','down']
+    vni:
+        description:
+            - Specify virtual network identifier. Valid values are Integer
+              or keyword 'default'.
+        required: false
+        default: null
+    route_distinguisher:
+        description:
+            -  VPN Route Distinguisher (RD). Valid values are a string in
+               one of the route-distinguisher formats (ASN2:NN, ASN4:NN, or
+               IPV4:NN); the keyword 'auto', or the keyword 'default'.
+        required: false
+        default: null
     state:
         description:
             - Manages desired state of the resource
@@ -178,6 +191,10 @@ def get_commands_to_config_vrf(delta, vrf):
                 command = 'no shutdown'
             elif value.lower() == 'down':
                 command = 'shutdown'
+        elif param == 'rd':
+            command = 'rd {0}'.format(value)
+        elif param == 'vni':
+            command = 'vni {0}'.format(value)
         if command:
             commands.append(command)
     if commands:
@@ -210,6 +227,14 @@ def get_vrf_description(vrf, module):
     return description
 
 
+def get_value(arg, config, module):
+    REGEX = re.compile(r'(?:{0}\s)(?P<value>.*)$'.format(arg), re.M)
+    value = ''
+    if arg in config:
+        value = REGEX.search(config).group('value')
+    return value
+
+
 def get_vrf(vrf, module):
     command = 'show vrf {0}'.format(vrf)
     vrf_key = {
@@ -218,15 +243,18 @@ def get_vrf(vrf, module):
         }
 
     body = execute_show_command(command, module)
-
     try:
         vrf_table = body[0]['TABLE_vrf']['ROW_vrf']
     except (TypeError, IndexError):
         return {}
 
     parsed_vrf = apply_key_map(vrf_key, vrf_table)
-    parsed_vrf['description'] = get_vrf_description(
-                                    parsed_vrf['vrf'], module)
+
+    command = 'show run all | section vrf.context.{0}'.format(vrf)
+    body = execute_show_command(command, module, 'text')
+    extra_params = ['vni', 'rd', 'description']
+    for param in extra_params:
+        parsed_vrf[param] = get_value(param, body[0], module)
 
     return parsed_vrf
 
@@ -235,6 +263,8 @@ def main():
     argument_spec = dict(
             vrf=dict(required=True),
             description=dict(default=None, required=False),
+            vni=dict(required=False, type='str'),
+            rd=dict(required=False, type='str'),
             admin_state=dict(default='up', choices=['up', 'down'],
                              required=False),
             state=dict(default='present', choices=['present', 'absent'],
@@ -246,6 +276,8 @@ def main():
     vrf = module.params['vrf']
     admin_state = module.params['admin_state'].lower()
     description = module.params['description']
+    rd = module.params['rd']
+    vni = module.params['vni']
     state = module.params['state']
 
     if vrf == 'default':
@@ -255,8 +287,8 @@ def main():
                          vrf=vrf)
 
     existing = get_vrf(vrf, module)
-    args = dict(vrf=vrf, description=description,
-                admin_state=admin_state)
+    args = dict(vrf=vrf, description=description, vni=vni,
+                admin_state=admin_state, rd=rd)
 
     end_state = existing
     changed = False
@@ -287,6 +319,9 @@ def main():
                 commands.extend(command)
 
     if commands:
+        if proposed.get('vni'):
+            if existing.get('vni') and existing.get('vni') != '':
+                commands.insert(1, 'no vni {0}'.format(existing['vni']))
         if module.check_mode:
             module.exit_json(changed=True, commands=cmds)
         else:

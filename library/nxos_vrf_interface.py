@@ -88,6 +88,7 @@ changed:
     sample: true
 '''
 
+WARNINGS = []
 
 def execute_config_command(commands, module):
     try:
@@ -189,17 +190,16 @@ def get_vrf_list(module):
 
 
 def get_interface_info(interface, module):
-    command = 'show run interface {0}'.format(interface)
+    command = 'show run | section interface.{0}'.format(interface.capitalize())
     vrf_regex = ".*vrf\s+member\s+(?P<vrf>\S+).*"
 
     try:
         body = execute_show_command(command, module,
                                     output='text')[0]
-
         match_vrf = re.match(vrf_regex, body, re.DOTALL)
         group_vrf = match_vrf.groupdict()
         vrf = group_vrf["vrf"]
-    except AttributeError:
+    except (AttributeError, TypeError):
         return ""
 
     return vrf
@@ -237,9 +237,8 @@ def main():
 
     current_vrfs = get_vrf_list(module)
     if vrf not in current_vrfs:
-        module.fail_json(msg="Ensure the VRF you're trying to config/remove on"
-                             " an interface is created globally on the device"
-                             " first.")
+        WARNINGS.append("The VRF is not present/active on the device. "
+                        "Use nxos_vrf to fix this.")
 
     intf_type = get_interface_type(interface)
     if (intf_type != 'ethernet' and module.params['transport'] == 'cli'):
@@ -299,6 +298,9 @@ def main():
     results['state'] = state
     results['updates'] = commands
     results['changed'] = changed
+
+    if WARNINGS:
+        results['warnings'] = WARNINGS
 
     module.exit_json(**results)
 

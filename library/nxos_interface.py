@@ -551,7 +551,7 @@ def execute_show_command(command, module, output='json'):
 
 def execute_modified_show_for_cli_text(command, module):
     cmds = [command]
-    response = execute_show(cmds, module)
+    response = execute_show(cmds, module, output='text')
     body = response
     return body
 

@@ -29,30 +29,26 @@ extends_documentation_fragment: nxos
 notes:
     - 'default' restores params default value
 options:
-    interface:
+    vrf:
         description:
-            - Interface name for the VXLAN Network Virtualization Endpoint
+            - Name of the VRF.
         required: true
-    vni:
+    afi:
         description:
-            - ID of the Virtual Network Identifier.
+            - Address-Family Identifier (AFI).
         required: true
+        choices: ['ipv4', 'ipv6']
         default: null
-    ingress_replication:
+    safi:
         description:
-            - Specifies mechanism for host reachability advertisement.
-        required: false
-        choices: ['bgp', 'static', 'default']
+            - Sub Address-Family Identifier (SAFI).
+        required: true
+        choices: ['unicast', 'multicast']
         default: null
-    multicast_group:
+    route_target_both_auto_evpn:
         description:
-            - The multicast group (range) of the VNI. Valid values are
-              string and keyword 'default'.
-        required: false
-        default: null
-    suppress_arp:
-        description:
-            - TSuppress arp under layer 2 VNI.
+            - Enable/Disable the EVPN route-target 'auto' setting for both
+              import and export target communities.
         required: false
         choices: ['true', 'false', 'default']
         default: null
@@ -79,13 +75,9 @@ EXAMPLES = '''
 BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
 BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
 ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE + ['default']
-BOOL_PARAMS = ['suppress_arp']
+BOOL_PARAMS = ['route_target_both_auto_evpn']
 PARAM_TO_COMMAND_KEYMAP = {
-    'interface': 'interface',
-    'vni': 'member vni',
-    'ingress_replication': 'ingress-replication protocol',
-    'multicast_group': 'mcast-group',
-    'suppress_arp': 'suppress-arp'
+    'route_target_both_auto_evpn': 'route-target both auto evpn',
 }
 PARAM_TO_DEFAULT_KEYMAP = {}
 WARNINGS = []
@@ -113,34 +105,33 @@ def get_value(arg, config, module):
     return value
 
 
-def check_interface(module, netcfg):
-    config = str(netcfg)
-
-    REGEX = re.compile(r'(?:interface nve)(?P<value>.*)$', re.M)
-    value = ''
-    if 'interface nve' in config:
-        value = 'nve{0}'.format(REGEX.search(config).group('value'))
-
-    return value
-
-
 def get_existing(module, args):
     existing = {}
     netcfg = get_config(module)
 
-    interface_exist = check_interface(module, netcfg)
-    if interface_exist:
-        parents = ['interface {0}'.format(interface_exist)]
-        parents.append('member vni {0}'.format(module.params['vni']))
-        config = netcfg.get_section(parents)
+    parents = ['vrf context {0}'.format(module.params['vrf'])]
+    parents.append('address-family {0} {1}'.format(module.params['afi'],
+                                            module.params['safi']))
+    config = netcfg.get_section(parents)
+    if config:
+        splitted_config = config.splitlines()
+        vrf_index = False
+        for index in range(0, len(splitted_config) - 1):
+            if 'vrf' in splitted_config[index].strip():
+                    vrf_index = index
+                    break
+        if vrf_index:
+            config = '\n'.join(splitted_config[0:vrf_index])
 
-        if config:
-            for arg in args:
-                if arg != 'interface':
-                    existing[arg] = get_value(arg, config, module)
-            existing['interface'] = interface_exist
+        for arg in args:
+            if arg not in ['afi', 'safi', 'vrf']:
+                existing[arg] = get_value(arg, config, module)
 
-    return existing, interface_exist
+        existing['afi'] = module.params['afi']
+        existing['safi'] = module.params['safi']
+        existing['vrf'] = module.params['vrf']
+
+    return existing
 
 
 def apply_key_map(key_map, table):
@@ -181,29 +172,26 @@ def state_present(module, existing, proposed, candidate):
             commands.append(command)
 
     if commands:
-        vni_command = 'member vni {0}'.format(module.params['vni'])
-        parents = ['interface {0}'.format(module.params['interface'])]
-        if vni_command in commands:
-            commands.remove(vni_command)
-            parents.append(vni_command)
-
+        parents = ['vrf context {0}'.format(module.params['vrf'])]
+        parents.append('address-family {0} {1}'.format(module.params['afi'],
+                                                module.params['safi']))
         candidate.add(commands, parents=parents)
 
 
 def state_absent(module, existing, proposed, candidate):
-    commands = ['no member vni {0}'.format(module.params['vni'])]
-    parents = ['interface {0}'.format(module.params['interface'])]
+    commands = []
+    parents = ['vrf context {0}'.format(module.params['vrf'])]
+    commands.append('no address-family {0} {1}'.format(module.params['afi'],
+                                                module.params['safi']))
     candidate.add(commands, parents=parents)
 
 
 def main():
     argument_spec = dict(
-            interface=dict(required=True, type='str'),
-            vni=dict(required=True, type='str'),
-            multicast_group=dict(required=False, type='str'),
-            suppress_arp=dict(required=False, type='str', choices=ACCEPTED),
-            ingress_replication=dict(required=False, type='str',
-                                     choices=['bgp', 'static', 'default']),
+            vrf=dict(required=True, type='str'),
+            safi=dict(required=True, type='str', choices=['unicast','multicast']),
+            afi=dict(required=True, type='str', choices=['ipv4','ipv6']),
+            route_target_both_auto_evpn=dict(required=False, choices=ACCEPTED),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
@@ -215,14 +203,13 @@ def main():
     state = module.params['state']
 
     args =  [
-            'interface',
-            'vni',
-            'ingress_replication',
-            'multicast_group',
-            'suppress_arp'
+            'vrf',
+            'safi',
+            'afi',
+            'route_target_both_auto_evpn'
         ]
 
-    existing, interface_exist = invoke('get_existing', module, args)
+    existing = invoke('get_existing', module, args)
     end_state = existing
     proposed_args = dict((k, v) for k, v in module.params.iteritems()
                     if v is not None and k in args)
@@ -246,34 +233,21 @@ def main():
 
     result = {}
     if state == 'present' or (state == 'absent' and existing):
-        if not interface_exist:
-            WARNINGS.append("The proposed NVE interface does not exist. "
-                            "Use nxos_interface to create it first.")
-        elif interface_exist != module.params['interface']:
-            module.fail_json(msg='Only 1 NVE interface is allowed on '
-                                 'the switch.')
-        elif (existing and state == 'absent' and
-                existing['vni'] != module.params['vni']):
-                module.fail_json(msg="ERROR: VNI delete failed: Could not find"
-                                     " vni node for {0}".format(
-                                     module.params['vni']),
-                                     existing_vni=existing['vni'])
-        else:
-            candidate = NetworkConfig(indent=3)
-            invoke('state_%s' % state, module, existing, proposed, candidate)
+        candidate = NetworkConfig(indent=3)
+        invoke('state_%s' % state, module, existing, proposed, candidate)
 
-            try:
-                response = load_config(module, candidate)
-                result.update(response)
-            except NetworkError:
-                exc = get_exception()
-                module.fail_json(msg=str(exc))
+        try:
+            response = load_config(module, candidate)
+            result.update(response)
+        except NetworkError:
+            exc = get_exception()
+            module.fail_json(msg=str(exc))
     else:
         result['updates'] = []
 
     result['connected'] = module.connected
     if module.params['m_facts']:
-        end_state, interface_exist = invoke('get_existing', module, args)
+        end_state = invoke('get_existing', module, args)
         result['end_state'] = end_state
         result['existing'] = existing
         result['proposed'] = proposed_args

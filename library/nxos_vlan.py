@@ -55,6 +55,12 @@ options:
         required: false
         default: up
         choices: ['up','down']
+    mapped_vni:
+        description:
+            - The Virtual Network Identifier (VNI) id that is mapped to the
+              VLAN. Valid values are integer and keyword 'default'.
+        required: false
+        default: null
     state:
         description:
             - Manage the state of the resource
@@ -99,20 +105,20 @@ proposed:
     returned: always
     type: dict or null
     sample: {"admin_state": "down", "name": "app_vlan",
-            "vlan_state": "suspend"}
+            "vlan_state": "suspend", "mapped_vni": "5000"}
 existing:
     description: k/v pairs of existing vlan or null when using vlan_range
     returned: always
     type: dict
     sample: {"admin_state": "down", "name": "app_vlan",
-             "vlan_id": "20", "vlan_state": "suspend"}
+             "vlan_id": "20", "vlan_state": "suspend", "mapped_vni": ""}
 end_state:
     description: k/v pairs of the VLAN after executing module or null
                  when using vlan_range
     returned: always
     type: dict or null
     sample: {"admin_state": "down", "name": "app_vlan", "vlan_id": "20",
-             "vlan_state": "suspend"}
+             "vlan_state": "suspend", "mapped_vni": "5000"}
 state:
     description: state as sent in from the playbook
     returned: always
@@ -122,7 +128,7 @@ updates:
     description: command string sent to the device
     returned: always
     type: list
-    sample: ["vlan 20", "vlan 55"]
+    sample: ["vlan 20", "vlan 55", "vn-segment 5000"]
 changed:
     description: check to see if a change was made on the device
     returned: always
@@ -196,13 +202,17 @@ def get_vlan_config_commands(vlan, vid):
         'name': 'name {0}',
         'vlan_state': 'state {0}',
         'admin_state': '{0}',
-        'mode': 'mode {0}'
+        'mode': 'mode {0}',
+        'mapped_vni': 'vn-segment {0}'
     }
 
     commands = []
 
     for param, value in vlan.iteritems():
-        command = VLAN_ARGS.get(param).format(vlan.get(param))
+        if param == 'mapped_vni' and value == 'default':
+            command = 'no vn-segment'
+        else:
+            command = VLAN_ARGS.get(param).format(vlan.get(param))
         if command:
             commands.append(command)
 
@@ -213,7 +223,6 @@ def get_vlan_config_commands(vlan, vid):
 
 
 def get_list_of_vlans(module):
-
     command = 'show vlan'
     body = execute_show_command(command, module)
     vlan_list = []
@@ -226,6 +235,17 @@ def get_list_of_vlans(module):
         vlan_list.append('1')
 
     return vlan_list
+
+
+def get_vni(vlanid, module):
+    command = 'show run all | section vlan.{0}'.format(vlanid)
+    body = execute_show_command(command, module, output='text')[0]
+    value = ''
+    if body:
+        REGEX = re.compile(r'(?:vn-segment\s)(?P<value>.*)$', re.M)
+        if 'vn-segment' in body:
+            value = REGEX.search(body).group('value')
+    return value
 
 
 def get_vlan(vlanid, module):
@@ -258,7 +278,7 @@ def get_vlan(vlanid, module):
     }
 
     vlan = apply_value_map(value_map, vlan)
-
+    vlan['mapped_vni'] = get_vni(vlanid, module)
     return vlan
 
 
@@ -318,7 +338,6 @@ def execute_show(cmds, module, output=None):
 
 
 def execute_show_command(command, module, output='json'):
-
     if module.params['transport'] == 'cli':
         command += ' | json'
         cmds = [command]
@@ -337,6 +356,7 @@ def main():
             vlan_range=dict(required=False),
             name=dict(required=False),
             vlan_state=dict(choices=['active', 'suspend'], required=False),
+            mapped_vni=dict(required=False, type='str'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
             admin_state=dict(choices=['up', 'down'], required=False),
@@ -351,6 +371,7 @@ def main():
     name = module.params['name']
     vlan_state = module.params['vlan_state']
     admin_state = module.params['admin_state']
+    mapped_vni = module.params['mapped_vni']
     state = module.params['state']
 
     changed = False
@@ -360,7 +381,7 @@ def main():
             module.fail_json(msg='vlan_id must be a valid VLAN ID')
 
     args = dict(name=name, vlan_state=vlan_state,
-                admin_state=admin_state)
+                admin_state=admin_state, mapped_vni=mapped_vni)
 
     proposed = dict((k, v) for k, v in args.iteritems() if v is not None)
 
@@ -390,6 +411,9 @@ def main():
             if existing:
                 commands = ['no vlan ' + vlan_id]
         elif state == 'present':
+            if (existing.get('mapped_vni') == '0' and
+                proposed['mapped_vni'] == 'default'):
+                proposed.pop('mapped_vni')
             delta = dict(set(
                 proposed.iteritems()).difference(existing.iteritems()))
             if delta or not existing:
@@ -399,6 +423,10 @@ def main():
     end_state_vlans_list = existing_vlans_list
 
     if commands:
+        if existing:
+            if (existing['mapped_vni'] != proposed['mapped_vni'] and
+                existing['mapped_vni'] != '0' and proposed['mapped_vni'] != 'default'):
+                commands.insert(1, 'no vn-segment')
         if module.check_mode:
             module.exit_json(changed=True,
                              commands=commands)
