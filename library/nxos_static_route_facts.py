@@ -19,7 +19,7 @@ DOCUMENTATION = '''
 ---
 
 module: nxos_static_route_facts
-version_added: "2.1"
+version_added: "2.2"
 short_description: Retrieve static route configuration
 description:
     - Retrieve static route configuration
@@ -478,7 +478,12 @@ def match_static_route(config, route_regex):
 def get_vrf_list(module):
     vrf_list = []
     cmd = 'show vrf'
-    response = module.execute(cmd, command_type='cli_show')
+    if module.params['transport'] == 'nxapi':
+        response = module.execute(cmd, command_type='cli_show')
+    else:
+        cmd += ' | json'
+        response = module.execute(cmd)
+        response = [json.loads(response[0])]
 
     try:
         vrf_table_list = response[0]['TABLE_vrf']['ROW_vrf']

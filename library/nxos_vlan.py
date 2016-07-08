@@ -714,7 +714,9 @@ def get_cli_body_ssh(command, response, module):
     if | json returns an XML string, it is a valid command, but that the
     resource doesn't exist yet.
     """
-    if 'xml' in response[0]:
+    if 'show run' in command:
+        body = response
+    elif 'xml' in response[0]:
         body = []
     else:
         try:
@@ -740,7 +742,8 @@ def execute_show(cmds, module, command_type=None):
 
 def execute_show_command(command, module, command_type='cli_show'):
     if module.params['transport'] == 'cli':
-        command += ' | json'
+        if 'show run' not in command:
+            command += ' | json'
         cmds = [command]
         response = execute_show(cmds, module)
         body = get_cli_body_ssh(command, response, module)
