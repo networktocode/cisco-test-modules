@@ -891,7 +891,8 @@ def main():
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
-                        required_together=[['pwd', 'pwd_type']],
+                        required_together=[['pwd', 'pwd_type'],
+                                           ['timers_holdtime', 'timers_keepalive']],
                         supports_check_mode=True)
 
     state = module.params['state']
