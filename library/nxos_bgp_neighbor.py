@@ -27,6 +27,7 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - State 'absent' removes the whole BGP neighbor configuration
+    - 'default' restores params default value
 options:
     asn:
         description:
@@ -49,12 +50,72 @@ options:
             - Description of the neighbor.
         required: false
         default: null
+    connected_check:
+        description:
+            - Configure whether or not to check for directly connected peer.
+        required: false
+        choices: ['true', 'false']
+        default: null
+    capability_negotiation:
+        description:
+            - Configure whether or not to negotiate capability with
+              this neighbor.
+        required: false
+        choices: ['true', 'false']
+        default: null
+    dynamic_capability:
+        description:
+            - Configure whether or not to enable dynamic capability.
+        required: false
+        choices: ['true', 'false']
+        default: null
+    ebgp_multihop:
+        description:
+            - Specify multihop TTL for a remote peer. Valid values are
+              integers between 2 and 255, or keyword 'default' to disable
+              this property.
+        required: false
+        default: null
     local_as:
         description:
             - Specify the local-as number for the eBGP neighbor.
               Valid values are String or Integer in ASPLAIN or ASDOT notation,
               or 'default', which means not to configure it.
         required: false
+        default: null
+    log_neighbor_changes:
+        description:
+            - Specify whether or not to enable log messages for neighbor
+             up/down event.
+        required: false
+        choices: ['enable', 'disable']
+        default: null
+    low_memory_exempt:
+        description:
+            - Specify whether or not to shut down this neighbor under
+              memory pressure.
+        required: false
+        choices: ['true', 'false', 'default']
+        default: null
+    maximum_peers:
+        description:
+            - Specify Maximum number of peers for this neighbor prefix
+              Valid values are between 1 and 1000, or 'default', which does
+              not impose the limit.
+        required: false
+        default: null
+    pwd:
+        description:
+            - Specify the password for neighbor. Valid value is string.
+        required: false
+        default: null
+    pwd_type:
+        description:
+            - Specify the encryption type the password will use. Valid values
+              are 'cleartext', '3des' or 'cisco_type_7' encryption, and
+              'default', which defaults to 'cleartext'.
+        required: false
+        choices: ['cleartext', '3des', 'cisco_type_7', 'default']
         default: null
     remote_as:
         description:
@@ -63,11 +124,51 @@ options:
               or 'default', which means not to configure it.
         required: false
         default: null
+    remove_private_as:
+        description:
+            - Specify the config to remove private AS number from outbound
+              updates. Valid values are 'enable' to enable this config,
+              'disable' to disable this config, 'all' to remove all
+              private AS number, or 'replace-as', to replace the private
+              AS number.
+        required: false
+        choices: ['enable', 'disable', 'all', 'replace-as']
+        default: null
     shutdown:
         description:
             - Configure to administratively shutdown this neighbor.
         required: false
         choices: ['true','false']
+        default: null
+    suppress_4_byte_as:
+        description:
+            - Configure to suppress 4-byte AS Capability.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
+    timers_keepalive:
+        description:
+            - Specify keepalive timer value. Valid values are integers
+              between 0 and 3600 in terms of seconds, or 'default',
+              which is 60.
+        required: false
+        default: null
+    timers_holdtime:
+        description:
+            - Specify holdtime timer value. Valid values are integers between
+              0 and 3600 in terms of seconds, or 'default', which is 180.
+        required: false
+        default: null
+    transport_passive_only:
+        description:
+            - Specify whether or not to only allow passive connection setup.
+              Valid values are 'true', 'false', and 'default', which defaults
+              to 'false'. This property can only be configured when the
+              neighbor is in 'ip' address format without prefix length.
+              This property and the transport_passive_mode property are
+              mutually exclusive.
+        required: false
+        choices: ['true','false', 'default']
         default: null
     update_source:
         description:
@@ -501,23 +602,49 @@ def load_config(module, candidate):
 
     return result
 # END OF COMMON CODE
-
+BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
+BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
+BOOLEANS = BOOLEANS_TRUE + BOOLEANS_FALSE
+ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE + ['default']
 WARNINGS = []
 BOOL_PARAMS = [
-    'shutdown'
+    'capability_negotiation',
+    'shutdown',
+    'connected_check',
+    'dynamic_capability',
+    'low_memory_exempt',
+    'suppress_4_byte_as',
+    'transport_passive_only'
 ]
 PARAM_TO_COMMAND_KEYMAP = {
     'asn': 'router bgp',
+    'capability_negotiation': 'dont-capability-negotiate',
+    'connected_check': 'disable-connected-check',
     'description': 'description',
+    'dynamic_capability': 'dynamic-capability',
+    'ebgp_multihop': 'ebgp-multihop',
     'local_as': 'local-as',
+    'log_neighbor_changes': 'log-neighbor-changes',
+    'low_memory_exempt': 'low-memory exempt',
+    'maximum_peers': 'maximum-peers',
     'neighbor': 'neighbor',
+    'pwd': 'password',
+    'pwd_type': 'password-type',
     'remote_as': 'remote-as',
+    'remove_private_as': 'remove-private-as',
     'shutdown': 'shutdown',
+    'suppress_4_byte_as': 'capability suppress 4-byte-as',
+    'timers_keepalive': 'timers-keepalive',
+    'timers_holdtime': 'timers-holdtime',
+    'transport_passive_only': 'transport connection-mode passive',
     'update_source': 'update-source',
     'vrf': 'vrf'
 }
 PARAM_TO_DEFAULT_KEYMAP = {
-    'shutdown': False
+    'shutdown': False,
+    'dynamic_capability': True,
+    'timers_keepalive': 60,
+    'timers_holdtime': 180
 }
 
 def invoke(name, *args, **kwargs):
@@ -544,10 +671,69 @@ def get_value(arg, config, module):
     return value
 
 
+def get_custom_value(arg, config, module):
+    value = ''
+    splitted_config = config.splitlines()
+
+    if arg == 'log_neighbor_changes':
+        for line in splitted_config:
+            if 'log-neighbor-changes' in line:
+                if 'disable' in line:
+                    value = 'disable'
+                else:
+                    value = 'enable'
+
+    elif arg == 'pwd':
+        for line in splitted_config:
+            if 'password' in line:
+                splitted_line = line.split()
+                value = splitted_line[2]
+
+    elif arg == 'pwd_type':
+        for line in splitted_config:
+            if 'password' in line:
+                splitted_line = line.split()
+                value = splitted_line[1]
+
+    elif arg == 'remove_private_as':
+        value = 'disable'
+        for line in splitted_config:
+            if 'remove-private-as' in line:
+                splitted_line = line.split()
+                if len(splitted_line) == 1:
+                    value = 'enable'
+                elif len(splitted_line) == 2:
+                    value = splitted_line[1]
+
+    elif arg == 'timers_keepalive':
+        REGEX = re.compile(r'(?:timers\s)(?P<value>.*)$', re.M)
+        value = ''
+        if 'timers' in config:
+            parsed = REGEX.search(config).group('value').split()
+            value = parsed[0]
+
+    elif arg == 'timers_holdtime':
+        REGEX = re.compile(r'(?:timers\s)(?P<value>.*)$', re.M)
+        value = ''
+        if 'timers' in config:
+            parsed = REGEX.search(config).group('value').split()
+            if len(parsed) == 2:
+                value = parsed[1]
+
+    return value
+
+
 def get_existing(module, args):
     existing = {}
     netcfg = get_config(module)
-
+    custom = [
+        'log_neighbor_changes',
+        'pwd',
+        'pwd_type',
+        'remove_private_as',
+        'timers_holdtime',
+        'timers_keepalive'
+    ]
     try:
         asn_regex = '.*router\sbgp\s(?P<existing_asn>\d+).*'
         match_asn = re.match(asn_regex, str(netcfg), re.DOTALL)
@@ -567,7 +753,10 @@ def get_existing(module, args):
         if config:
             for arg in args:
                 if arg not in ['asn', 'vrf', 'neighbor']:
-                    existing[arg] = get_value(arg, config, module)
+                    if arg in custom:
+                        existing[arg] = get_custom_value(arg, config, module)
+                    else:
+                        existing[arg] = get_value(arg, config, module)
 
             existing['asn'] = existing_asn
             existing['neighbor'] = module.params['neighbor']
@@ -575,7 +764,6 @@ def get_existing(module, args):
     else:
         WARNINGS.append("The BGP process didn't exist but the task"
                         " just created it.")
-
     return existing
 
 
@@ -612,22 +800,47 @@ def state_present(module, existing, proposed, candidate):
                 if key.replace(' ', '_').replace('-', '_') in BOOL_PARAMS:
                     commands.append('no {0}'.format(key))
         else:
-            command = '{0} {1}'.format(key, value)
-            commands.append(command)
+            if key == 'log-neighbor-changes':
+                if value == 'enable':
+                    command = '{0}'.format(key)
+                else:
+                    command = '{0} {1}'.format(key, value)
+            elif key == 'password':
+                pwd_type = module.params['pwd_type']
+                if pwd_type == '3des':
+                    pwd_type = 3
+                else:
+                    pwd_type = 7
+                command = '{0} {1} {2}'.format(key, pwd_type, value)
+                if command not in commands:
+                    commands.append(command)
+            elif key == 'remove-private-as':
+                if value == 'enable':
+                    command = '{0}'.format(key)
+                    commands.append(command)
+                elif value == 'disable':
+                    if existing_commands.get(key) != 'disable':
+                        command = 'no {0}'.format(key)
+                        commands.append(command)
+                else:
+                    command = '{0} {1}'.format(key, value)
+                    commands.append(command)
+            elif key.startswith('timers'):
+                command = 'timers {0} {1}'.format(
+                    proposed_commands['timers-keepalive'],
+                    proposed_commands['timers-holdtime'])
+                if command not in commands:
+                    commands.append(command)
+            else:
+                command = '{0} {1}'.format(key, value)
+                commands.append(command)
 
     if commands:
         parents = ["router bgp {0}".format(module.params['asn'])]
         if module.params['vrf'] != 'default':
             parents.append('vrf {0}'.format(module.params['vrf']))
 
-        if len(commands) == 1:
-            candidate.add(commands, parents=parents)
-
-        elif len(commands) > 1:
-            neighbor_command = 'neighbor {0}'.format(module.params['neighbor'])
-            if neighbor_command in commands:
-                commands.remove(neighbor_command)
-            parents.append('neighbor {0}'.format(module.params['neighbor']))
+        parents.append('neighbor {0}'.format(module.params['neighbor']))
 
         # make sure that local-as is the last command in the list.
         local_as_command = 'local-as {0}'.format(module.params['local_as'])
@@ -636,6 +849,7 @@ def state_present(module, existing, proposed, candidate):
             commands.append(local_as_command)
         candidate.add(commands, parents=parents)
 
+
 def state_absent(module, existing, proposed, candidate):
     commands = []
     parents = ["router bgp {0}".format(module.params['asn'])]
@@ -643,7 +857,6 @@ def state_absent(module, existing, proposed, candidate):
         parents.append('vrf {0}'.format(module.params['vrf']))
 
     commands.append('no neighbor {0}'.format(module.params['neighbor']))
-
     candidate.add(commands, parents=parents)
 
 
@@ -653,33 +866,64 @@ def main():
             vrf=dict(required=False, type='str', default='default'),
             neighbor=dict(required=True, type='str'),
             description=dict(required=False, type='str'),
+            capability_negotiation=dict(required=False, type='bool', choices=BOOLEANS),
+            connected_check=dict(required=False, type='bool', choices=BOOLEANS),
+            dynamic_capability=dict(required=False, type='str', choices=ACCEPTED),
+            ebgp_multihop=dict(required=False, type='str'),
             local_as=dict(required=False, type='str'),
+            log_neighbor_changes=dict(required=False, type='str', choices=['enable', 'disable']),
+            low_memory_exempt=dict(required=False, type='str', choices=ACCEPTED),
+            maximum_peers=dict(required=False, type='str'),
+            pwd=dict(required=False, type='str'),
+            pwd_type=dict(required=False, type='str', choices=['cleartext', '3des', 'cisco_type_7', 'default']),
             remote_as=dict(required=False, type='str'),
+            remove_private_as=dict(required=False, type='str', choices=['enable', 'disable', 'all', 'replace-as']),
             shutdown=dict(required=False, type='str'),
+            suppress_4_byte_as=dict(required=False, type='str', choices=ACCEPTED),
+            timers_keepalive=dict(required=False, type='str'),
+            timers_holdtime=dict(required=False, type='str'),
+            transport_passive_only=dict(required=False, type='str', choices=ACCEPTED),
             update_source=dict(required=False, type='str'),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
+            include_defaults=dict(default=True)
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
+                        required_together=[['pwd', 'pwd_type']],
                         supports_check_mode=True)
 
     state = module.params['state']
+    if module.params['pwd_type'] == 'default':
+        module.params['pwd_type'] = '0'
 
     args =  [
             'asn',
+            'capability_negotiation',
+            'connected_check',
             'description',
+            'dynamic_capability',
+            'ebgp_multihop',
             'local_as',
+            'log_neighbor_changes',
+            'low_memory_exempt',
+            'maximum_peers',
             'neighbor',
+            'pwd',
+            'pwd_type',
             'remote_as',
+            'remove_private_as',
             'shutdown',
+            'suppress_4_byte_as',
+            'timers_keepalive',
+            'timers_holdtime',
+            'transport_passive_only',
             'update_source',
             'vrf'
         ]
 
     existing = invoke('get_existing', module, args)
-
     if existing.get('asn'):
         if (existing.get('asn') != module.params['asn'] and
             state == 'present'):
@@ -693,12 +937,12 @@ def main():
 
     proposed = {}
     for key, value in proposed_args.iteritems():
-        if key not in ['asn', 'vrf']:
-            if value.lower() == 'true':
+        if key not in ['asn', 'vrf', 'neighbor', 'pwd_type']:
+            if str(value).lower() == 'true':
                 value = True
-            elif value.lower() == 'false':
+            elif str(value).lower() == 'false':
                 value = False
-            elif value.lower() == 'default':
+            elif str(value).lower() == 'default':
                 value = PARAM_TO_DEFAULT_KEYMAP.get(key)
                 if value is None:
                     if key in BOOL_PARAMS:
@@ -733,8 +977,6 @@ def main():
         result['warnings'] = WARNINGS
 
     module.exit_json(**result)
-
-
 
 
 from ansible.module_utils.basic import *

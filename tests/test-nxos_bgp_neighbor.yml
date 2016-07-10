@@ -5,43 +5,33 @@
   connection: local
   gather_facts: no
 
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
 
   tasks:
   - name: remove the bgp process
     nxos_bgp:
-      asn=65535
-      host={{ inventory_hostname }}
-      state=absent
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+      asn: 65535
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
-
-  - name: prepare the device
-    nxos_bgp:
-      asn=65535
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
-    register: data
+    tags: test
 
   - name: add a bgp neighbor
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      description="testing description"
-      local_as=10
-      update_source=loopback0
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      description: "testing description"
+      local_as: 10
+      update_source: loopback0
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -53,18 +43,15 @@
         - data.end_state['update_source'] == 'loopback0'
 
   - name: idempotency check
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      description="testing description"
-      local_as=10
-      update_source=loopback0
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      description: "testing description"
+      local_as: 10
+      update_source: loopback0
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -72,18 +59,15 @@
         - data.changed == false
 
   - name: set properties to their defaults
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      description=default
-      local_as=default
-      update_source=default
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: "2.2.2.2"
+      description: default
+      local_as: default
+      update_source: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -94,18 +78,15 @@
         - data.end_state['update_source'] == ''
 
   - name: idempotency check
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      description=default
-      local_as=default
-      update_source=default
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: "2.2.2.2"
+      description: default
+      local_as: default
+      update_source: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -113,18 +94,15 @@
         - data.changed == false
 
   - name: add a neighbor for vrf test
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      vrf=test
-      remote_as=20
-      local_as=10
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: "2.2.2.2"
+      vrf: test
+      remote_as: 20
+      local_as: 10
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -135,18 +113,15 @@
         - data.end_state['remote_as'] == '20'
 
   - name: idempotency check
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      vrf=test
-      remote_as=20
-      local_as=10
-      host={{ inventory_hostname }}
-      state=present
-      transport=cli
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: "2.2.2.2"
+      vrf: test
+      remote_as: 20
+      local_as: 10
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -154,18 +129,15 @@
         - data.changed == false
 
   - name: change remote-as and shutdown
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      vrf=test
-      remote_as=30
-      shutdown=true
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      vrf: test
+      remote_as: 30
+      shutdown: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
@@ -175,31 +147,237 @@
         - data.end_state['shutdown'] == true
 
   - name: idempotency check
-    nxos_bgp_neighbor:
-      asn=65535
-      neighbor=2.2.2.2
-      vrf=test
-      remote_as=30
-      shutdown=true
-      host={{ inventory_hostname }}
-      state=present
-      transport=cli
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      vrf: test
+      remote_as: 30
+      shutdown: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
 
   - assert:
       that:
         - data.changed == false
 
+  - name: set all booleans
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      vrf: test
+      capability_negotiation: true
+      shutdown: true
+      connected_check: true
+      dynamic_capability: true
+      low_memory_exempt: true
+      suppress_4_byte_as: true
+      transport_passive_only: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['capability_negotiation'] == true
+        - data.end_state['shutdown'] == true
+        - data.end_state['connected_check'] == true
+        - data.end_state['dynamic_capability'] == true
+        - data.end_state['low_memory_exempt'] == true
+        - data.end_state['suppress_4_byte_as'] == true
+        - data.end_state['transport_passive_only'] == true
+    tags: new
+
+  - name: idempotency check
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.2
+      vrf: test
+      capability_negotiation: true
+      shutdown: true
+      connected_check: true
+      dynamic_capability: true
+      low_memory_exempt: true
+      suppress_4_byte_as: true
+      transport_passive_only: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: new
+
+  - name: configure ebgp_multihop and maximum_peers
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      ebgp_multihop: 3
+      maximum_peers: 4
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ebgp_multihop'] == "3"
+        - data.end_state['maximum_peers'] == "4"
+    tags: new
+
+  - name: idempotency check
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      ebgp_multihop: 3
+      maximum_peers: 4
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: new
+
+  - name: set password
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      pwd: fe7c78b3b3c40d05e4c3a27e84b721b6
+      pwd_type: 3des
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['pwd'] == "fe7c78b3b3c40d05e4c3a27e84b721b6"
+        - data.end_state['pwd_type'] == "3"
+    tags: new
+
+  - name: idempotency check
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      pwd: fe7c78b3b3c40d05e4c3a27e84b721b6
+      pwd_type: 3des
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: new
+
+  - name: set remove_private_as to all and timers
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      remove_private_as: all
+      timers_keepalive: 80
+      timers_holdtime: 240
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['remove_private_as'] == "all"
+        - data.end_state['timers_keepalive'] == "80"
+        - data.end_state['timers_holdtime'] == "240"
+    tags: new
+
+  - name: idempotency check
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      remove_private_as: all
+      timers_keepalive: 80
+      timers_holdtime: 240
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: new
+
+  - name: disable remove_private_as and set timers to default
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      remove_private_as: disable
+      timers_keepalive: default
+      timers_holdtime: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['remove_private_as'] == "disable"
+        - data.end_state['timers_keepalive'] == "60"
+        - data.end_state['timers_holdtime'] == "180"
+    tags: new
+
+  - name: idempotency check
+    nxos_bgp_neighbor_2_1:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      remove_private_as: disable
+      timers_keepalive: default
+      timers_holdtime: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: new
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: new
+
   - name: remove the bgp process
     nxos_bgp:
-      asn=65535
-      host={{ inventory_hostname }}
-      state=absent
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+      asn: 65535
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
+    ignore_errors: true
