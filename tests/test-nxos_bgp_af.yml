@@ -5,30 +5,22 @@
   connection: local
   gather_facts: no
 
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
 
   tasks:
   - name: remove the bgp process
     nxos_bgp:
-      asn=65535
-      host={{ inventory_hostname }}
-      state=absent
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
+      asn: 65535
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
     register: data
     tags: test
-
-  - name: prepare the device
-    nxos_bgp:
-      asn=65535
-      host={{ inventory_hostname }}
-      state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
-      m_facts=true
-    register: data
 
   - name: instantiate ipv6 unicast address-family
     nxos_bgp_af:
@@ -36,11 +28,8 @@
       afi: ipv6
       safi: unicast
       vrf: test
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -57,11 +46,8 @@
       afi: ipv6
       safi: unicast
       vrf: test
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -76,11 +62,8 @@
       safi: unicast
       vrf: test
       advertise_l2vpn_evpn: true
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -99,11 +82,8 @@
       safi: unicast
       vrf: test
       advertise_l2vpn_evpn: true
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -118,11 +98,8 @@
       safi: unicast
       vrf: test
       advertise_l2vpn_evpn: true
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -141,11 +118,8 @@
       safi: unicast
       vrf: test
       advertise_l2vpn_evpn: true
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -158,11 +132,8 @@
       asn: 65535
       afi: vpnv4
       safi: unicast
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -178,11 +149,8 @@
       asn: 65535
       afi: vpnv4
       safi: unicast
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
     tags: test
@@ -197,11 +165,7 @@
       afi: l2vpn
       safi: evpn
       state: present
-      host: "{{ inventory_hostname }}"
-      state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -217,11 +181,8 @@
       asn: 65535
       afi: l2vpn
       safi: evpn
-      host: "{{ inventory_hostname }}"
       state: present
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -234,11 +195,8 @@
       asn: 65535
       afi: l2vpn
       safi: evpn
-      host: "{{ inventory_hostname }}"
       state: absent
-      transport: nxapi
-      username: "{{ un }}"
-      password: "{{ pwd }}"
+      provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
 
@@ -246,3 +204,196 @@
       that:
         - data.changed == true
         - data.end_state == {}
+
+  - name: turn on all booleans
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_install: true
+      additional_paths_receive: true
+      additional_paths_send: true
+      advertise_l2vpn_evpn: true
+      client_to_client: true
+      dampening_state: true
+      default_information_originate: true
+      suppress_inactive: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['additional_paths_install'] == true
+        - data.end_state['additional_paths_receive'] == true
+        - data.end_state['additional_paths_send'] == true
+        - data.end_state['advertise_l2vpn_evpn'] == true
+        - data.end_state['client_to_client'] == true
+        - data.end_state['dampening_state'] == true
+        - data.end_state['default_information_originate'] == true
+        - data.end_state['suppress_inactive'] == true
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_install: true
+      additional_paths_receive: true
+      additional_paths_send: true
+      advertise_l2vpn_evpn: true
+      client_to_client: true
+      dampening_state: true
+      default_information_originate: true
+      suppress_inactive: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure custom distances and inject-maps
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      distance_ibgp: 60
+      distance_ebgp: 50
+      distance_local: 70
+      inject_map:
+        - [lax_inject_map, lax_exist_map]
+        - [nyc_inject_map, nyc_exist_map, copy-attributes]
+        - [fsd_inject_map, fsd_exist_map]
+      provider: "{{ nxos_provider }}"
+      state: present
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['distance_ibgp'] == "60"
+        - data.end_state['distance_ebgp'] == "50"
+        - data.end_state['distance_local'] == "70"
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      distance_ibgp: 60
+      distance_ebgp: 50
+      distance_local: 70
+      inject_map:
+        - [lax_inject_map, lax_exist_map]
+        - [nyc_inject_map, nyc_exist_map, copy-attributes]
+        - [fsd_inject_map, fsd_exist_map]
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure maximum paths and networks
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      maximum_paths: 2
+      maximum_paths_ibgp: 3
+      networks:
+        - [10.0.0.0/16, routemap_LA]
+        - [192.168.1.0/30, Chicago]
+        - [192.168.2.0/24]
+        - [192.168.3.0/24, routemap_NYC]
+      provider: "{{ nxos_provider }}"
+      state: present
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['maximum_paths'] == "2"
+        - data.end_state['maximum_paths_ibgp'] == "3"
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      maximum_paths: 2
+      maximum_paths_ibgp: 3
+      networks:
+        - [10.0.0.0/16, routemap_LA]
+        - [192.168.1.0/30, Chicago]
+        - [192.168.2.0/24]
+        - [192.168.3.0/24, routemap_NYC]
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure redistribution
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      redistribute:
+        - ['direct', 'rm_direct']
+        - ['lisp', 'rm_lisp']
+        - ['static', 'rm_static']
+        - ['eigrp 1', 'rm_eigrp']
+        - ['isis 2', 'rm_isis']
+        - ['ospf 3', 'rm_ospf']
+        - ['rip 4', 'rm_rip']
+      provider: "{{ nxos_provider }}"
+      state: present
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      redistribute:
+        - ['direct', 'rm_direct']
+        - ['lisp', 'rm_lisp']
+        - ['static', 'rm_static']
+        - ['eigrp 1', 'rm_eigrp']
+        - ['isis 2', 'rm_isis']
+        - ['ospf 3', 'rm_ospf']
+        - ['rip 4', 'rm_rip']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

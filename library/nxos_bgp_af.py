@@ -48,11 +48,141 @@ options:
             - Sub Address Family Identifier.
         required: true
         choices: ['unicast','multicast', 'evpn']
+    additional_paths_install:
+        description:
+            - Install a backup path into the forwarding table and provide
+              prefix 'independent convergence (PIC) in case of a PE-CE link
+              failure.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
+    additional_paths_receive:
+        description:
+            - Enables the receive capability of additional paths for all of
+              the neighbors under this address family for which the capability
+              has not been disabled.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
+    additional_paths_selection:
+        description:
+            - Configures the capability of selecting additional paths for
+              a prefix. Valid values are a string defining the name of
+              the route-map.
+        required: false
+        default: null
+    additional_paths_send:
+        description:
+            - Enables the send capability of additional paths for all of
+              the neighbors under this address family for which the capability
+              has not been disabled.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
     advertise_l2vpn_evpn:
         description:
             - Advertise evpn routes.
         required: false
         choices: ['true','false']
+        default: null
+    client_to_client:
+        description:
+            - Configure client-to-client route reflection.
+        required: false
+        choices: ['true','false']
+        default: null
+    dampen_igp_metric:
+        description:
+            - Specify dampen value for IGP metric-related changes, in seconds.
+              Valid values are integer and keyword 'default'.
+        required: false
+        default: null
+    dampening_state:
+        description:
+            - Enable/disable route-flap dampening.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
+    dampening_half_time:
+        description:
+            - Specify decay half-life in minutes for route-flap dampening.
+              Valid values are integer and keyword 'default'.
+        required: false
+        default: null
+    dampening_max_suppress_time:
+        description:
+            - Specify max suppress time for route-flap dampening stable route.
+              Valid values are integer and keyword 'default'.
+        required: false
+        default: null
+    dampening_reuse_time:
+        description:
+            - Specify route reuse time for route-flap dampening.
+              Valid values are integer and keyword 'default'.
+        required: false
+    dampening_routemap:
+        description:
+            - Specify route-map for route-flap dampening. Valid values are a
+              string defining the name of the route-map.
+        required: false
+        default: null
+    dampening_suppress_time:
+        description:
+            - Specify route suppress time for route-flap dampening.
+              Valid values are integer and keyword 'default'.
+        required: false
+        default: null
+    default_information_originate:
+        description:
+            - Default information originate.
+        required: false
+        choices: ['true','false']
+        default: null
+    default_metric:
+        description:
+            - Sets default metrics for routes redistributed into BGP.
+              Valid values are Integer or keyword 'default'
+        required: false
+        default: null
+    distance_ebgp:
+        description:
+            - Sets the administrative distance for eBGP routes.
+              Valid values are Integer or keyword 'default'.
+        required: false
+        default: null
+    distance_ibgp:
+        description:
+            - Sets the administrative distance for iBGP routes.
+              Valid values are Integer or keyword 'default'.
+        required: false
+        default: null
+    distance_local:
+        description:
+            - Sets the administrative distance for local BGP routes.
+              Valid values are Integer or keyword 'default'.
+        required: false
+        default: null
+    inject_map:
+        description:
+            - An array of route-map names which will specify prefixes to
+              inject. Each array entry must first specify the inject-map name,
+              secondly an exist-map name, and optionally the copy-attributes
+              keyword which indicates that attributes should be copied from
+              the aggregate. Example: [['lax_inject_map', 'lax_exist_map'],
+              ['nyc_inject_map', 'nyc_exist_map', 'copy-attributes'],
+              ['fsd_inject_map', 'fsd_exist_map']]
+        required: false
+        default: null
+    maximum_paths:
+        description:
+            - Configures the maximum number of equal-cost paths for
+              load sharing. Valid value is an integer in the range 1-64.
+        default: null
+    maximum_paths_ibgp:
+        description:
+            - Configures the maximum number of ibgp equal-cost paths for
+              load sharing. Valid value is an integer in the range 1-64.
+        required: false
         default: null
     networks:
         description:
@@ -63,6 +193,42 @@ options:
               ['192.168.1.1', 'Chicago'], ['192.168.2.0/24],
               ['192.168.3.0/24', 'routemap_NYC']]
         required: false
+        default: null
+    next_hop_route_map:
+        description:
+            - Configure a route-map for valid nexthops. Valid values are a
+              string defining the name of the route-map.
+        required: false
+        default: null
+    redistribute:
+        description:
+            - A list of redistribute directives. Multiple redistribute entries
+              are allowed. The list must be in the form of a nested array:
+              the first entry of each array defines the source-protocol to
+              redistribute from; the second entry defines a route-map name.
+              A route-map is highly advised but may be optional on some
+              platforms, in which case it may be omitted from the array list.
+              Example: [['direct', 'rm_direct'], ['lisp', 'rm_lisp']]
+        required: false
+        default: null
+    suppress_inactive:
+        description:
+            - Advertises only active routes to peers.
+        required: false
+        choices: ['true','false', 'default']
+        default: null
+    table_map:
+        description:
+            - Apply table-map to filter routes downloaded into URIB.
+              Valid values are a string.
+        required: false
+        default: null
+    table_map_filter:
+        description:
+            - Filters routes rejected by the route-map and does not download
+              them to the RIB.
+        required: false
+        choices: ['true','false', 'default']
         default: null
     state:
         description:
@@ -491,6 +657,10 @@ def load_config(module, candidate):
 # END OF COMMON CODE
 
 WARNINGS = []
+BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
+BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
+BOOLEANS = BOOLEANS_TRUE + BOOLEANS_FALSE
+ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE + ['default']
 BOOL_PARAMS = [
     'additional_paths_install',
     'additional_paths_receive',
@@ -500,7 +670,6 @@ BOOL_PARAMS = [
     'dampening_state',
     'default_information_originate',
     'suppress_inactive',
-    'table_map_filter'
 ]
 PARAM_TO_DEFAULT_KEYMAP = {
     'maximum_paths': '1',
@@ -528,29 +697,28 @@ PARAM_TO_COMMAND_KEYMAP = {
     'dampening_reuse_time': 'dampening',
     'dampening_routemap': 'dampening route-map',
     'dampening_suppress_time': 'dampening',
-    'default_information_originate': 'default-information-originate',
+    'default_information_originate': 'default-information originate',
     'default_metric': 'default-metric',
-    'distance_ebgp': 'default-metric',
-    'distance_ibgp': 'default-metric',
-    'distance_local': 'default-metric',
+    'distance_ebgp': 'distance',
+    'distance_ibgp': 'distance',
+    'distance_local': 'distance',
     'inject_map': 'inject-map',
     'maximum_paths': 'maximum-paths',
     'maximum_paths_ibgp': 'maximum-paths ibgp',
     'networks': 'network',
-    'redistribute_direct': 'redistribute direct route-map',
-    'redistribute_eigrp': 'redistribute eigrp route-map',
-    'redistribute_hmm': 'redistribute hmm route-map',
-    'redistribute_isis': 'redistribute isis route-map',
-    'redistribute_ospf': 'redistribute ospf route-map',
-    'redistribute_static': 'redistribute static route-map',
-    'redistribute_rip': 'redistribute rip route-map',
-    'redistribute_lisp': 'redistribute lisp route-map',
+    'redistribute': 'redistribute',
     'next_hop_route_map': 'nexthop route-map',
     'suppress_inactive': 'suppress-inactive',
     'table_map': 'table-map',
-    'table_map_filter': 'table-map',
+    'table_map_filter': 'table-map-filter',
     'vrf': 'vrf'
 }
+DAMPENING_PARAMS = [
+        'dampening_half_time',
+        'dampening_suppress_time',
+        'dampening_reuse_time',
+        'dampening_max_suppress_time'
+        ]
 
 
 def invoke(name, *args, **kwargs):
@@ -560,9 +728,9 @@ def invoke(name, *args, **kwargs):
 
 
 def get_custom_list_value(config, arg, module):
+    value_list = []
     splitted_config = config.splitlines()
     if arg == 'inject_map':
-        value_list = []
         REGEX_INJECT = ('.*inject-map\s(?P<inject_map>\S+)'
                        '\sexist-map\s(?P<exist_map>\S+)-*')
 
@@ -599,7 +767,6 @@ def get_custom_list_value(config, arg, module):
                 value_list.append(value)
 
     elif arg == 'networks':
-        value_list = []
         REGEX_NETWORK = re.compile(r'(?:network\s)(?P<value>.*)$')
 
         for line in splitted_config:
@@ -613,6 +780,21 @@ def get_custom_list_value(config, arg, module):
                         value.pop(1)
                     value_list.append(value)
 
+    elif arg == 'redistribute':
+        RED_REGEX = re.compile(r'(?:{0}\s)(?P<value>.*)$'.format(
+                                PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
+        for line in splitted_config:
+            value =  []
+            redistribute_group = {}
+            if 'redistribute' in line:
+                value = RED_REGEX.search(line).group('value').split()
+                if value:
+                    if len(value) == 3:
+                        value.pop(1)
+                    elif len(value) == 4:
+                        value = ['{0} {1}'.format(
+                                        value[0], value[1]), value[3]]
+                    value_list.append(value)
     return value_list
 
 
@@ -660,13 +842,28 @@ def get_custom_string_value(config, arg, module):
                     value = dampening_group['suppress']
                 elif arg == 'dampening_max_suppress_time':
                     value = dampening_group['max_suppress']
+
+    elif arg == 'table_map_filter':
+        TMF_REGEX = re.compile(r'\s+table-map.*filter$', re.M)
+        value = False
+        try:
+            if TMF_REGEX.search(config):
+                value = True
+        except TypeError:
+            value = False
+    elif arg == 'table_map':
+        TM_REGEX = re.compile(r'(?:table-map\s)(?P<value>\S+)(\sfilter)?$', re.M)
+        value = ''
+        if PARAM_TO_COMMAND_KEYMAP[arg] in config:
+            value = TM_REGEX.search(config).group('value')
     return value
 
 
 def get_value(arg, config, module):
     custom = [
         'inject_map',
-        'networks'
+        'networks',
+        'redistribute'
     ]
 
     if arg in BOOL_PARAMS:
@@ -681,7 +878,8 @@ def get_value(arg, config, module):
     elif arg in custom:
         value = get_custom_list_value(config, arg, module)
 
-    elif arg.startswith('distance') or arg.startswith('dampening'):
+    elif (arg.startswith('distance') or arg.startswith('dampening') or
+            arg.startswith('table_map')):
         value = get_custom_string_value(config, arg, module)
 
     else:
@@ -742,9 +940,147 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
-def state_present(module, existing, proposed, candidate):
+def fix_proposed(module, proposed):
     commands = list()
-    proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
+    command = ''
+    fixed_proposed = {}
+
+    for key, value in proposed.iteritems():
+        if key in DAMPENING_PARAMS:
+            if value != 'default':
+                command = 'dampening {0} {1} {2} {3}'.format(
+                    proposed.get('dampening_half_time'),
+                    proposed.get('dampening_reuse_time'),
+                    proposed.get('dampening_suppress_time'),
+                    proposed.get('dampening_max_suppress_time'))
+            else:
+                if existing.get(key):
+                    command = ('no dampening {0} {1} {2} {3}'.format(
+                        existing['dampening_half_time'],
+                        existing['dampening_reuse_time'],
+                        existing['dampening_suppress_time'],
+                        existing['dampening_max_suppress_time']))
+
+        elif key.startswith('distance'):
+            command = 'distance {0} {1} {2}'.format(
+                proposed.get('distance_ebgp'),
+                proposed.get('distance_ibgp'),
+                proposed.get('distance_local'))
+        else:
+            fixed_proposed[key] = value
+
+        if command:
+            if command not in commands:
+                commands.append(command)
+
+    return fixed_proposed, commands
+
+
+def default_existing(existing_value, key, value):
+    commands = []
+    if key == 'network':
+        for network in existing_value:
+            if len(network) == 2:
+                commands.append('no network {0} route-map {1}'.format(
+                        network[0], network[1]))
+            elif len(network) == 1:
+                commands.append('no network {0}'.format(
+                        network[0]))
+
+    elif key == 'inject-map':
+        for maps in existing_value:
+            if len(maps) == 2:
+                commands.append('no inject-map {0} exist-map {1}'.format(
+                                maps[0], maps[1]))
+            elif len(maps) == 3:
+                commands.append('no inject-map {0} exist-map {1} '
+                                'copy-attributes'.format(
+                                maps[0], maps[1]))
+    else:
+        commands.append('no {0} {1}'.format(key, existing_value))
+    return commands
+
+
+def get_network_command(existing, key, value):
+    commands = []
+    existing_networks = existing.get('networks', [])
+    for inet in value:
+        if not isinstance(inet, list):
+            inet = [inet]
+        if inet not in existing_networks:
+            if len(inet) == 1:
+                command = '{0} {1}'.format(key, inet[0])
+            elif len(inet) == 2:
+                command = '{0} {1} route-map {2}'.format(key,
+                                                inet[0], inet[1])
+            commands.append(command)
+    return commands
+
+
+def get_inject_map_command(existing, key, value):
+    commands = []
+    existing_maps = existing.get('inject_map', [])
+    for maps in value:
+        if not isinstance(maps, list):
+            maps = [maps]
+        if maps not in existing_maps:
+            if len(maps) == 2:
+                command = ('inject-map {0} exist-map {1}'.format(
+                            maps[0], maps[1]))
+            elif len(maps) == 3:
+                command = ('inject-map {0} exist-map {1} '
+                           'copy-attributes'.format(maps[0],
+                                                    maps[1]))
+            commands.append(command)
+    return commands
+
+
+def get_redistribute_command(existing, key, value):
+    commands = []
+    for rule in value:
+        if rule[1] == 'default':
+            existing_rule = existing.get('redistribute', [])
+            for each_rule in existing_rule:
+                if rule[0] in each_rule:
+                    command = 'no {0} {1} route-map {2}'.format(
+                                    key, each_rule[0], each_rule[1])
+                    commands.append(command)
+        else:
+            command = '{0} {1} route-map {2}'.format(key, rule[0], rule[1])
+            commands.append(command)
+    return commands
+
+
+def get_table_map_command(module, existing, key, value):
+    commands = []
+    if key == 'table-map':
+        if value != 'default':
+            command = '{0} {1}'.format(key, module.params['table_map'])
+            if (module.params['table_map_filter'] is not None and
+                module.params['table_map_filter'] != 'default'):
+                command += ' filter'
+            commands.append(command)
+        else:
+            if existing.get('table_map') == module.params['table_map']:
+                command = 'no {0} {1}'.format(key, module.params['table_map'])
+                commands.append(command)
+    return commands
+
+
+def get_default_table_map_filter(existing):
+    commands = []
+    existing_table_map_filter = existing.get('table_map_filter')
+    if existing_table_map_filter:
+        existing_table_map = existing.get('table_map')
+        if existing_table_map:
+            command = 'table-map {0}'.format(existing_table_map)
+            commands.append(command)
+    return commands
+
+
+def state_present(module, existing, proposed, candidate):
+    fixed_proposed, commands = fix_proposed(module, proposed)
+    proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, fixed_proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
     for key, value in proposed_commands.iteritems():
         if key == 'address-family':
@@ -752,6 +1088,12 @@ def state_present(module, existing, proposed, candidate):
                             module.params['afi'], module.params['safi'])
             if addr_family_command not in commands:
                 commands.append(addr_family_command)
+
+        elif key.startswith('table-map'):
+            table_map_commands = get_table_map_command(module, existing, key, value)
+            if table_map_commands:
+                commands.extend(table_map_commands)
+
         elif value is True:
             commands.append(key)
 
@@ -763,35 +1105,35 @@ def state_present(module, existing, proposed, candidate):
                 commands.append('{0} {1}'.format(key, PARAM_TO_DEFAULT_KEYMAP[key]))
 
             elif existing_commands.get(key):
-                existing_value = existing_commands.get(key)
-                if key == 'network':
-                    for network in existing_value:
-                        if len(network) == 2:
-                            commands.append('no network {0} route-map {1}'.format(
-                                    network[0], network[1]))
-                        elif len(network) == 1:
-                            commands.append('no network {0}'.format(
-                                    network[0]))
+                if key == 'table-map-filter':
+                    default_tmf_command = get_default_table_map_filter(existing)
+
+                    if default_tmf_command:
+                        commands.extend(default_tmf_command)
                 else:
-                    commands.append('no {0} {1}'.format(key, existing_value))
+                    existing_value = existing_commands.get(key)
+                    default_command = default_existing(existing_value, key, value)
+                    if default_command:
+                        commands.extend(default_command)
             else:
                 if key.replace(' ', '_').replace('-', '_') in BOOL_PARAMS:
                     commands.append('no {0}'.format(key))
         else:
             if key == 'network':
-                existing_networks = existing.get('networks', [])
+                network_commands = get_network_command(existing, key, value)
+                if network_commands:
+                    commands.extend(network_commands)
 
-                for inet in value:
-                    if not isinstance(inet, list):
-                        inet = [inet]
+            elif key == 'inject-map':
+                inject_map_commands = get_inject_map_command(existing, key, value)
+                if inject_map_commands:
+                    commands.extend(inject_map_commands)
 
-                    if inet not in existing_networks:
-                        if len(inet) == 1:
-                            command = '{0} {1}'.format(key, inet[0])
-                        elif len(inet) == 2:
-                            command = '{0} {1} route-map {2}'.format(key,
-                                                            inet[0], inet[1])
-                        commands.append(command)
+            elif key == 'redistribute':
+                redistribute_commands = get_redistribute_command(existing, key, value)
+                if redistribute_commands:
+                    commands.extend(redistribute_commands)
+
             else:
                 command = '{0} {1}'.format(key, value)
                 commands.append(command)
@@ -819,7 +1161,6 @@ def state_absent(module, existing, proposed, candidate):
 
     commands.append('no address-family {0} {1}'.format(
                             module.params['afi'], module.params['safi']))
-
     candidate.add(commands, parents=parents)
 
 
@@ -829,23 +1170,62 @@ def main():
             vrf=dict(required=False, type='str', default='default'),
             safi=dict(required=True, type='str', choices=['unicast','multicast', 'evpn']),
             afi=dict(required=True, type='str', choices=['ipv4','ipv6', 'vpnv4', 'vpnv6', 'l2vpn']),
-            advertise_l2vpn_evpn=dict(required=False, type='bool'),
+            additional_paths_install=dict(required=False, type='str', choices=ACCEPTED),
+            additional_paths_receive=dict(required=False, type='str', choices=ACCEPTED),
+            additional_paths_selection=dict(required=False, type='str'),
+            additional_paths_send=dict(required=False, type='str', choices=ACCEPTED),
+            advertise_l2vpn_evpn=dict(required=False, type='bool', choices=BOOLEANS),
+            client_to_client=dict(required=False, type='bool', choices=BOOLEANS),
+            dampen_igp_metric=dict(required=False, type='str'),
+            dampening_state=dict(required=False, type='str', choices=ACCEPTED),
+            dampening_half_time=dict(required=False, type='str'),
+            dampening_max_suppress_time=dict(required=False, type='str'),
+            dampening_reuse_time=dict(required=False, type='str'),
+            dampening_routemap=dict(required=False, type='str'),
+            dampening_suppress_time=dict(required=False, type='str'),
+            default_information_originate=dict(required=False, type='bool', choices=BOOLEANS),
+            default_metric=dict(required=False, type='str'),
+            distance_ebgp=dict(required=False, type='str'),
+            distance_ibgp=dict(required=False, type='str'),
+            distance_local=dict(required=False, type='str'),
+            inject_map=dict(required=False, type='list'),
+            maximum_paths=dict(required=False, type='str'),
+            maximum_paths_ibgp=dict(required=False, type='str'),
             networks=dict(required=False, type='list'),
+            next_hop_route_map=dict(required=False, type='str'),
+            redistribute=dict(required=False, type='list'),
+            suppress_inactive=dict(required=False, type='str', choices=ACCEPTED),
+            table_map=dict(required=False, type='str'),
+            table_map_filter=dict(required=False, type='str', choices=ACCEPTED),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
+            include_defaults=dict(default=True)
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
+                        required_together=[DAMPENING_PARAMS,
+                                          ['distance_ibgp',
+                                           'distance_ebgp',
+                                           'distance_local']],
                         supports_check_mode=True)
 
     state = module.params['state']
+    if module.params['dampening_routemap']:
+        for param in DAMPENING_PARAMS:
+            if module.params[param]:
+                module.fail_json(msg='dampening_routemap cannot be used with'
+                                     ' the {0} param'.format(param))
 
     if module.params['advertise_l2vpn_evpn']:
         if module.params['vrf'] == 'default':
             module.fail_json(msg='It is not possible to advertise L2VPN '
                                  'EVPN in the default VRF. Please specify '
                                  'another one.', vrf=module.params['vrf'])
+
+    if module.params['table_map_filter'] and not module.params['table_map']:
+        module.fail_json(msg='table_map param is needed when using'
+                             ' table_map_filter filter.')
 
     args =  [
             "additional_paths_install",
@@ -873,14 +1253,7 @@ def main():
             "maximum_paths_ibgp",
             "networks",
             "next_hop_route_map",
-            "redistribute_direct",
-            "redistribute_eigrp",
-            "redistribute_hmm",
-            "redistribute_isis",
-            "redistribute_ospf",
-            "redistribute_static",
-            "redistribute_rip",
-            "redistribute_lisp",
+            "redistribute",
             "safi",
             "suppress_inactive",
             "table_map",
@@ -904,15 +1277,18 @@ def main():
     if proposed_args.get('networks'):
         if proposed_args['networks'][0] == 'default':
             proposed_args['networks'] = 'default'
+    if proposed_args.get('inject_map'):
+        if proposed_args['inject_map'][0] == 'default':
+            proposed_args['inject_map'] = 'default'
 
     proposed = {}
     for key, value in proposed_args.iteritems():
         if key not in ['asn', 'vrf']:
-            if value == 'true':
+            if str(value).lower() == 'true':
                 value = True
-            elif value == 'false':
+            elif str(value).lower() == 'false':
                 value = False
-            elif value == 'default':
+            elif str(value).lower() == 'default':
                 value = PARAM_TO_DEFAULT_KEYMAP.get(key)
                 if value is None:
                     if key in BOOL_PARAMS:
@@ -946,7 +1322,6 @@ def main():
     if WARNINGS:
         result['warnings'] = WARNINGS
     module.exit_json(**result)
-
 
 
 from ansible.module_utils.basic import *
