@@ -112,10 +112,10 @@ options:
     pwd_type:
         description:
             - Specify the encryption type the password will use. Valid values
-              are 'cleartext', '3des' or 'cisco_type_7' encryption, and
-              'default', which defaults to 'cleartext'.
+              are '3des' or 'cisco_type_7' encryption, and
+              'default', which removes existing password.
         required: false
-        choices: ['cleartext', '3des', 'cisco_type_7', 'default']
+        choices: ['3des', 'cisco_type_7', 'default']
         default: null
     remote_as:
         description:
