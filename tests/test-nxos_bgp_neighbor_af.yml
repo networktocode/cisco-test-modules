@@ -1,6 +1,6 @@
 ---
 
-- name: TESTING NXOS_BGP_AF
+- name: TESTING NXOS_BGP_NEIGHBOR_AF
   hosts: n9k2
   connection: local
   gather_facts: no
@@ -20,10 +20,9 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
-    tags: test
 
   - name: prepare the device
-    nxos_bgp_neighbor_af:
+    nxos_bgp_neighbor:
       asn: 65535
       neighbor: '3.3.3.3'
       remote_as: 65535
@@ -155,6 +154,807 @@
       afi: ipv4
       safi: unicast
       send_community: both
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set all booleans
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      default_originate: true
+      next_hop_self: true
+      next_hop_third_party: true
+      suppress_inactive: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['allowas_in'] == true
+        - data.end_state['default_originate'] == true
+        - data.end_state['next_hop_self'] == true
+        - data.end_state['next_hop_third_party'] == true
+        - data.end_state['suppress_inactive'] == true
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      default_originate: true
+      next_hop_self: true
+      next_hop_third_party: true
+      suppress_inactive: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set all booleans to default
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: default
+      default_originate: default
+      next_hop_self: default
+      next_hop_third_party: default
+      suppress_inactive: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['allowas_in'] == false
+        - data.end_state['default_originate'] == false
+        - data.end_state['next_hop_self'] == false
+        - data.end_state['next_hop_third_party'] == false
+        - data.end_state['suppress_inactive'] == false
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: default
+      default_originate: default
+      next_hop_self: default
+      next_hop_third_party: default
+      suppress_inactive: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure additional paths capabilities
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: enable
+      additional_paths_send: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['additional_paths_send'] == "enable"
+        - data.end_state['additional_paths_receive'] == "enable"
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: enable
+      additional_paths_send: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: disable additional paths capabilities
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: disable
+      additional_paths_send: disable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['additional_paths_send'] == "disable"
+        - data.end_state['additional_paths_receive'] == "disable"
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: disable
+      additional_paths_send: disable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: inherit additional paths capabilities
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: inherit
+      additional_paths_send: inherit
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['additional_paths_send'] == "inherit"
+        - data.end_state['additional_paths_receive'] == "inherit"
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      additional_paths_receive: inherit
+      additional_paths_send: inherit
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: advertise existing map
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_map_exist: ['my_advertise_map', 'my_exist_map']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['advertise_map_exist'][0] == 'my_advertise_map'
+        - data.end_state['advertise_map_exist'][1] == 'my_exist_map'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_map_exist: ['my_advertise_map', 'my_exist_map']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: advertise non existing map
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_map_non_exist: ['my_advertise_map', 'my_non_exist_map']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['advertise_map_non_exist'][0] == 'my_advertise_map'
+        - data.end_state['advertise_map_non_exist'][1] == 'my_non_exist_map'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      advertise_map_non_exist: ['my_advertise_map', 'my_non_exist_map']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure allow-in property
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      allowas_in_max: 6
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['allowas_in'] == true
+        - data.end_state['allowas_in_max'] == '6'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      allowas_in_max: 6
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: default allow-in max property
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      allowas_in_max: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['allowas_in'] == true
+        - data.end_state['allowas_in_max'] == ''
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      allowas_in: true
+      allowas_in_max: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure default originate route-map
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      default_originate_route_map: default_originate_route_map
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['default_originate_route_map'] == 'default_originate_route_map'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      default_originate_route_map: default_originate_route_map
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure in/out params
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      filter_list_in: filter_list_in
+      filter_list_out: filter_list_out
+      prefix_list_in: prefix_list_in
+      prefix_list_out: prefix_list_out
+      route_map_in: route_map_in
+      route_map_out: route_map_out
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['filter_list_in'] == 'filter_list_in'
+        - data.end_state['filter_list_out'] == 'filter_list_out'
+        - data.end_state['prefix_list_in'] == 'prefix_list_in'
+        - data.end_state['prefix_list_out'] == 'prefix_list_out'
+        - data.end_state['route_map_in'] == 'route_map_in'
+        - data.end_state['route_map_out'] == 'route_map_out'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      filter_list_in: filter_list_in
+      filter_list_out: filter_list_out
+      prefix_list_in: prefix_list_in
+      prefix_list_out: prefix_list_out
+      route_map_in: route_map_in
+      route_map_out: route_map_out
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: defaults in/out params
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      filter_list_in: default
+      filter_list_out: default
+      prefix_list_in: default
+      prefix_list_out: default
+      route_map_out: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['filter_list_in'] == ''
+        - data.end_state['filter_list_out'] == ''
+        - data.end_state['prefix_list_in'] == ''
+        - data.end_state['prefix_list_out'] == ''
+        - data.end_state['route_map_out'] == ''
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      filter_list_in: default
+      filter_list_out: default
+      prefix_list_in: default
+      prefix_list_out: default
+      route_map_out: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure maximum-prefix limit and restart interval
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_interval: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['max_prefix_limit'] == '40'
+        - data.end_state['max_prefix_interval'] == '50'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_interval: 50
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add maximum-prefix threshold
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_interval: 50
+      max_prefix_threshold: 30
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['max_prefix_limit'] == '40'
+        - data.end_state['max_prefix_interval'] == '50'
+        - data.end_state['max_prefix_threshold'] == '30'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_interval: 50
+      max_prefix_threshold: 30
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add maximum-prefix warning-only
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_warning: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['max_prefix_limit'] == '40'
+        - data.end_state['max_prefix_warning'] == true
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_warning: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove maximum-prefix warning-only
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_warning: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['max_prefix_limit'] == '40'
+        - data.end_state['max_prefix_warning'] == false
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: 40
+      max_prefix_warning: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove maximum-prefix
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['max_prefix_limit'] == ''
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      max_prefix_limit: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure soo, soft-reconfiguration, unsuppress-map and weight
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: enable
+      soo: "20:30"
+      unsuppress_map: unsuppress_map
+      weight: 40
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['soft_reconfiguration_in'] == 'enable'
+        - data.end_state['soo'] == '20:30'
+        - data.end_state['unsuppress_map'] == 'unsuppress_map'
+        - data.end_state['weight'] == '40'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: enable
+      soo: "20:30"
+      unsuppress_map: unsuppress_map
+      weight: 40
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove soo, soft-reconfiguration, unsuppress-map and weight
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: inherit
+      soo: default
+      unsuppress_map: default
+      weight: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['soft_reconfiguration_in'] == 'inherit'
+        - data.end_state['soo'] == ''
+        - data.end_state['weight'] == ''
+        - data.end_state['unsuppress_map'] == ''
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: inherit
+      soo: default
+      unsuppress_map: default
+      weight: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure soft-reconfiguration to always
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: always
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['soft_reconfiguration_in'] == 'always'
+
+  - name: idempotency check
+    nxos_bgp_neighbor_af:
+      asn: 65535
+      neighbor: '2.2.2.2'
+      afi: ipv4
+      safi: unicast
+      vrf: test
+      soft_reconfiguration_in: always
       state: present
       provider: "{{ nxos_provider }}"
       m_facts: true
