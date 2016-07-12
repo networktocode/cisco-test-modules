@@ -1,0 +1,302 @@
+---
+
+- name: TESTING NXOS_PIM_RP_ADDRESS
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: configure PIM RP
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add bidirectional option
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      bidir: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      bidir: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove RP
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      bidir: true
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.20"
+      bidir: true
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure RP with route-map
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      route_map: ansible
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      route_map: ansible
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add bidirectional option
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      route_map: ansible
+      bidir: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      bidir: true
+      route_map: ansible
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove RP
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      route_map: ansible
+      bidir: true
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      bidir: true
+      route_map: ansible
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add RP and group-list
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      group_list: "224.0.0.0/4"
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      group_list: "224.0.0.0/4"
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove RP
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      group_list: "224.0.0.0/4"
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      group_list: "224.0.0.0/4"
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure RP with prefix-list
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      prefix_list: ansible
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      prefix_list: ansible
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add bidirectional option
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      prefix_list: ansible
+      bidir: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      prefix_list: ansible
+      bidir: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove RP
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      prefix_list: ansible
+      bidir: true
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_pim_rp_address:
+      rp_address: "10.1.1.21"
+      bidir: true
+      prefix_list: ansible
+      m_facts: true
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
