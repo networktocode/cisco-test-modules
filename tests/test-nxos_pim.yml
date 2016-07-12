@@ -1,0 +1,59 @@
+---
+
+- name: TESTING NXOS_PIM
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: set ssm_range to none
+    nxos_pim:
+      ssm_range: none
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['ssm_range'] == 'none'
+
+  - name: idempotency check
+    nxos_pim:
+      ssm_range: none
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set ssm_range to 232.0.0.0/8
+    nxos_pim:
+      ssm_range: "232.0.0.0/8"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ssm_range'] == '232.0.0.0/8'
+
+  - name: idempotency check
+    nxos_pim:
+      ssm_range: "232.0.0.0/8"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
