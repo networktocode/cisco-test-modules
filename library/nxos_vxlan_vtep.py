@@ -685,11 +685,11 @@ def main():
     proposed = {}
     for key, value in proposed_args.iteritems():
         if key != 'interface':
-            if value.lower() == 'true':
+            if str(value).lower() == 'true':
                 value = True
-            elif value.lower() == 'false':
+            elif str(value).lower() == 'false':
                 value = False
-            elif value.lower() == 'default':
+            elif str(value).lower() == 'default':
                 value = PARAM_TO_DEFAULT_KEYMAP.get(key)
                 if value is None:
                     if key in BOOL_PARAMS:
