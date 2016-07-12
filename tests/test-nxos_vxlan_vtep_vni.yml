@@ -86,6 +86,148 @@
       that:
         - data.changed == false
 
+  - name: remove ingress-replication bgp
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['vni'] == '6000'
+        - data.end_state['ingress_replication'] == ''
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      ingress_replication: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure multicast group
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      multicast_group: "224.1.33.4"
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['multicast_group'] == '224.1.33.4'
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      multicast_group: "224.1.33.4"
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove multicast group
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      multicast_group: default
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['multicast_group'] == ''
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      multicast_group: default
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure static peers
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      peer_list: "1.2.3.8,1.2.3.9,1.2.3.7"
+      ingress_replication: static
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      peer_list: "1.2.3.8,1.2.3.9,1.2.3.7"
+      ingress_replication: static
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove static peers
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      peer_list: default
+      ingress_replication: static
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 6000
+      peer_list: default
+      ingress_replication: static
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
   - name: remove vni
     nxos_vxlan_vtep_vni:
       interface: nve1
@@ -114,3 +256,50 @@
   - assert:
       that:
         - data.changed == false
+
+  - name: prepare the device
+    nxos_vxlan_vtep:
+      interface: nve1
+      description: "configured with Ansible"
+      host_reachability: true
+      state: present
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: associate vni to vrf
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 7000
+      assoc_vrf: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['assoc_vrf'] == true
+
+  - name: idempotency check
+    nxos_vxlan_vtep_vni:
+      interface: nve1
+      vni: 7000
+      assoc_vrf: true
+      m_facts: true
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove nve interface
+    nxos_vxlan_vtep:
+      interface: nve1
+      state: absent
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+    register: data

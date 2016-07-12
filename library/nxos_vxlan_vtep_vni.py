@@ -38,11 +38,20 @@ options:
             - ID of the Virtual Network Identifier.
         required: true
         default: null
+    assoc_vrf:
+        description:
+            - This attribute is used to identify and separate processing VNIs
+              that are associated with a VRF and used for routing. The VRF
+              and VNI specified with this command must match the configuration
+              of the VNI under the VRF.
+        required: false
+        choices: ['true','false']
+        default: null
     ingress_replication:
         description:
             - Specifies mechanism for host reachability advertisement.
         required: false
-        choices: ['bgp', 'static', 'default']
+        choices: ['bgp','static','default']
         default: null
     multicast_group:
         description:
@@ -50,11 +59,18 @@ options:
               string and keyword 'default'.
         required: false
         default: null
+    peer_list:
+        description:
+            - Set the ingress-replication static peer list. Valid values
+              are an array, a space-separated string of ip addresses,
+              or the keyword 'default'.
+        required: false
+        default: null
     suppress_arp:
         description:
-            - TSuppress arp under layer 2 VNI.
+            - Suppress arp under layer 2 VNI.
         required: false
-        choices: ['true', 'false', 'default']
+        choices: ['true','false','default']
         default: null
     state:
         description:
@@ -480,13 +496,16 @@ def load_config(module, candidate):
 
 BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
 BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
-ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE + ['default']
+BOOLEANS = BOOLEANS_TRUE + BOOLEANS_FALSE
+ACCEPTED = BOOLEANS + ['default']
 BOOL_PARAMS = ['suppress_arp']
 PARAM_TO_COMMAND_KEYMAP = {
+    'assoc_vrf': 'associate-vrf',
     'interface': 'interface',
     'vni': 'member vni',
     'ingress_replication': 'ingress-replication protocol',
     'multicast_group': 'mcast-group',
+    'peer_list': 'peer-ip',
     'suppress_arp': 'suppress-arp'
 }
 PARAM_TO_DEFAULT_KEYMAP = {}
@@ -526,21 +545,57 @@ def check_interface(module, netcfg):
     return value
 
 
+def get_custom_value(arg, config, module):
+    splitted_config = config.splitlines()
+    if arg == 'assoc_vrf':
+        value = False
+        if 'associate-vrf' in config:
+            value = True
+    elif arg == 'peer_list':
+        value = []
+        REGEX = re.compile(r'(?:peer-ip\s)(?P<peer_value>.*)$', re.M)
+        for line in splitted_config:
+            peer_value = ''
+            if PARAM_TO_COMMAND_KEYMAP[arg] in line:
+                peer_value = REGEX.search(line).group('peer_value')
+            if peer_value:
+                value.append(peer_value)
+    return value
+
+
 def get_existing(module, args):
     existing = {}
     netcfg = get_config(module)
 
+    custom = [
+        'assoc_vrf',
+        'peer_list'
+        ]
+
     interface_exist = check_interface(module, netcfg)
     if interface_exist:
         parents = ['interface {0}'.format(interface_exist)]
-        parents.append('member vni {0}'.format(module.params['vni']))
-        config = netcfg.get_section(parents)
+        temp_config = netcfg.get_section(parents)
+
+        if 'associate-vrf' in temp_config:
+            parents.append('member vni {0} associate-vrf'.format(
+                                                    module.params['vni']))
+            config = netcfg.get_section(parents)
+        elif 'member vni' in temp_config:
+            parents.append('member vni {0}'.format(module.params['vni']))
+            config = netcfg.get_section(parents)
+        else:
+            config = {}
 
         if config:
             for arg in args:
-                if arg != 'interface':
-                    existing[arg] = get_value(arg, config, module)
+                if arg not in ['interface', 'vni']:
+                    if arg in custom:
+                        existing[arg] = get_custom_value(arg, config, module)
+                    else:
+                        existing[arg] = get_value(arg, config, module)
             existing['interface'] = interface_exist
+            existing['vni'] = module.params['vni']
 
     return existing, interface_exist
 
@@ -564,7 +619,19 @@ def state_present(module, existing, proposed, candidate):
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
 
     for key, value in proposed_commands.iteritems():
-        if value is True:
+        if key == 'associate-vrf':
+            command = 'member vni {0} {1}'.format(module.params['vni'], key)
+
+            if value:
+                commands.append(command)
+            else:
+                commands.append('no {0}'.format(command))
+
+        elif key == 'peer-ip' and value != 'default':
+            for peer in value:
+                commands.append('{0} {1}'.format(key, peer))
+
+        elif value is True:
             commands.append(key)
 
         elif value is False:
@@ -573,8 +640,11 @@ def state_present(module, existing, proposed, candidate):
         elif value == 'default':
             if existing_commands.get(key):
                 existing_value = existing_commands.get(key)
-                commands.append('no {0} {1}'.format(key, existing_value))
-
+                if key == 'peer-ip':
+                    for peer in existing_value:
+                        commands.append('no {0} {1}'.format(key, peer))
+                else:
+                    commands.append('no {0} {1}'.format(key, existing_value))
             else:
                 if key.replace(' ', '_').replace('-', '_') in BOOL_PARAMS:
                     commands.append('no {0}'.format(key.lower()))
@@ -584,16 +654,29 @@ def state_present(module, existing, proposed, candidate):
 
     if commands:
         vni_command = 'member vni {0}'.format(module.params['vni'])
-        parents = ['interface {0}'.format(module.params['interface'])]
-        if vni_command in commands:
-            commands.remove(vni_command)
-            parents.append(vni_command)
+        ingress_replication_command = 'ingress-replication protocol static'
+        interface_command = 'interface {0}'.format(module.params['interface'])
 
-        candidate.add(commands, parents=parents)
+        if ingress_replication_command in commands:
+            static_level_cmds = [cmd for cmd in commands if 'peer' in cmd]
+            parents = [interface_command, vni_command, ingress_replication_command]
+            candidate.add(static_level_cmds, parents=parents)
+            commands = [cmd for cmd in commands if 'peer' not in cmd]
+
+        if vni_command in commands:
+            parents = [interface_command]
+            commands.remove(vni_command)
+            if module.params['assoc_vrf'] is None:
+                parents.append(vni_command)
+            candidate.add(commands, parents=parents)
 
 
 def state_absent(module, existing, proposed, candidate):
-    commands = ['no member vni {0}'.format(module.params['vni'])]
+    if existing['assoc_vrf']:
+        commands = ['no member vni {0} associate-vrf'.format(
+                                                module.params['vni'])]
+    else:
+        commands = ['no member vni {0}'.format(module.params['vni'])]
     parents = ['interface {0}'.format(module.params['interface'])]
     candidate.add(commands, parents=parents)
 
@@ -602,7 +685,9 @@ def main():
     argument_spec = dict(
             interface=dict(required=True, type='str'),
             vni=dict(required=True, type='str'),
+            assoc_vrf=dict(required=False, type='bool', choices=BOOLEANS),
             multicast_group=dict(required=False, type='str'),
+            peer_list=dict(required=False, type='list'),
             suppress_arp=dict(required=False, type='str', choices=ACCEPTED),
             ingress_replication=dict(required=False, type='str',
                                      choices=['bgp', 'static', 'default']),
@@ -615,13 +700,34 @@ def main():
     module = get_module(argument_spec=argument_spec,
                         supports_check_mode=True)
 
-    state = module.params['state']
+    if module.params['assoc_vrf']:
+        mutually_exclusive_params = ['multicast_group',
+                                     'suppress_arp',
+                                     'ingress_replication']
+        for param in mutually_exclusive_params:
+            if module.params[param]:
+                module.fail_json(msg='assoc_vrf cannot be used with '
+                                     '{0} param'.format(param))
+    if module.params['peer_list']:
+        if module.params['ingress_replication'] != 'static':
+            module.fail_json(msg='ingress_replication=static is required '
+                                 'when using peer_list param')
+        else:
+            peer_list = module.params['peer_list']
+            if peer_list[0] == 'default':
+                module.params['peer_list'] = 'default'
+            else:
+                stripped_peer_list = map(str.strip, peer_list)
+                module.params['peer_list'] = stripped_peer_list
 
+    state = module.params['state']
     args =  [
+            'assoc_vrf',
             'interface',
             'vni',
             'ingress_replication',
             'multicast_group',
+            'peer_list',
             'suppress_arp'
         ]
 
@@ -633,11 +739,11 @@ def main():
     proposed = {}
     for key, value in proposed_args.iteritems():
         if key != 'interface':
-            if value.lower() == 'true':
+            if str(value).lower() == 'true':
                 value = True
-            elif value.lower() == 'false':
+            elif str(value).lower() == 'false':
                 value = False
-            elif value.lower() == 'default':
+            elif str(value).lower() == 'default':
                 value = PARAM_TO_DEFAULT_KEYMAP.get(key)
                 if value is None:
                     if key in BOOL_PARAMS:
