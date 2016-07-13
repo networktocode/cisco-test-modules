@@ -578,6 +578,9 @@ def main():
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
+                        mutually_exclusive=[['group_list', 'route_map'],
+                                            ['group_list', 'prefix_list'],
+                                            ['route_map', 'prefix_list']],
                         supports_check_mode=True)
 
     state = module.params['state']
