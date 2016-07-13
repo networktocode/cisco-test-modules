@@ -17,6 +17,7 @@
     nxos_ospf_vrf:
       ospf: 1
       router_id: "2.2.2.2"
+      vrf: test
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: absent
@@ -26,6 +27,7 @@
     nxos_ospf_vrf:
       ospf: 1
       router_id: "2.2.2.2"
+      vrf: test
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: present
@@ -40,6 +42,7 @@
     nxos_ospf_vrf:
       ospf: 1
       router_id: "2.2.2.2"
+      vrf: test
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: present
@@ -53,6 +56,7 @@
     nxos_ospf_vrf:
       ospf: 1
       router_id: "3.3.3.3"
+      vrf: test
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: present
@@ -67,6 +71,217 @@
     nxos_ospf_vrf:
       ospf: 1
       router_id: "3.3.3.3"
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure default-metric and auto_cost
+    nxos_ospf_vrf:
+      ospf: 1
+      default_metric: 40
+      auto_cost: 50000
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['default_metric'] == '40'
+        - data.end_state['auto_cost'] == '50000'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      default_metric: 40
+      auto_cost: 50000
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set default-metric and auto_cost to default
+    nxos_ospf_vrf:
+      ospf: 1
+      default_metric: default
+      auto_cost: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['default_metric'] == ''
+        - data.end_state['auto_cost'] == '40000'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      default_metric: default
+      auto_cost: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure timers
+    nxos_ospf_vrf:
+      ospf: 1
+      timer_throttle_spf_start: 50
+      timer_throttle_spf_hold: 1000
+      timer_throttle_spf_max: 2000
+      timer_throttle_lsa_start: 60
+      timer_throttle_lsa_hold: 1100
+      timer_throttle_lsa_max: 3000
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['timer_throttle_spf_start'] == '50'
+        - data.end_state['timer_throttle_spf_hold'] == '1000'
+        - data.end_state['timer_throttle_spf_max'] == '2000'
+        - data.end_state['timer_throttle_lsa_start'] == '60'
+        - data.end_state['timer_throttle_lsa_hold'] == '1100'
+        - data.end_state['timer_throttle_lsa_max'] == '3000'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      timer_throttle_spf_start: 50
+      timer_throttle_spf_hold: 1000
+      timer_throttle_spf_max: 2000
+      timer_throttle_lsa_start: 60
+      timer_throttle_lsa_hold: 1100
+      timer_throttle_lsa_max: 3000
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure default timers
+    nxos_ospf_vrf:
+      ospf: 1
+      timer_throttle_spf_start: default
+      timer_throttle_spf_hold: default
+      timer_throttle_spf_max: default
+      timer_throttle_lsa_start: default
+      timer_throttle_lsa_hold: default
+      timer_throttle_lsa_max: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['timer_throttle_spf_start'] == '200'
+        - data.end_state['timer_throttle_spf_hold'] == '1000'
+        - data.end_state['timer_throttle_spf_max'] == '5000'
+        - data.end_state['timer_throttle_lsa_start'] == '0'
+        - data.end_state['timer_throttle_lsa_hold'] == '5000'
+        - data.end_state['timer_throttle_lsa_max'] == '5000'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      timer_throttle_spf_start: default
+      timer_throttle_spf_hold: default
+      timer_throttle_spf_max: default
+      timer_throttle_lsa_start: default
+      timer_throttle_lsa_hold: default
+      timer_throttle_lsa_max: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure log-adjacency-changes
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: log
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['log_adjacency'] == 'log'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: log
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure log-adjacency-changes detail
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: detail
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['log_adjacency'] == 'detail'
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: detail
+      vrf: test
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: present
@@ -79,6 +294,7 @@
   - name: remove router-id for OSPF 1
     nxos_ospf_vrf:
       ospf: 1
+      vrf: test
       router_id: default
       m_facts: true
       provider: "{{ nxos_provider }}"
@@ -93,6 +309,7 @@
   - name: idempotency check
     nxos_ospf_vrf:
       ospf: 1
+      vrf: test
       router_id: ""
       m_facts: true
       provider: "{{ nxos_provider }}"
