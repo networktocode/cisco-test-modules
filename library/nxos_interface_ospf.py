@@ -27,6 +27,9 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - 'default' restores params default value
+    - To remove an existing authentication configuration you should use
+      message_digest_key_id=default plus all other options matching their
+      existing values.
     - State absent remove the whole OSPF interface configuration
 options:
     interface:
@@ -46,6 +49,60 @@ options:
     cost:
         description:
             - The cost associated with this cisco_interface_ospf instance.
+        required: false
+        default: null
+    hello_interval:
+        description:
+            - Time between sending successive hello packets.
+              Valid values are an integer or the keyword 'default'.
+        required: false
+        default: null
+    dead_interval:
+        description:
+            - Time interval an ospf neighbor waits for a hello
+              packet before tearing down adjacencies. Valid values are an
+              integer or the keyword 'default'.
+        required: false
+        default: null
+    passive_interface:
+        description:
+            - Setting to true will prevent this interface from receiving
+              HELLO packets. Valid values are 'true' and 'false'.
+        required: false
+        choices: ['true','false']
+        default: null
+    message_digest:
+        description:
+            - Enables or disables the usage of message digest authentication.
+              Valid values are 'true' and 'false'.
+        required: false
+        choices: ['true','false']
+        default: null
+    message_digest_key_id:
+        description:
+            - md5 authentication key-id associated with the ospf instance.
+              If this is present, message_digest_encryption_type,
+              message_digest_algorithm_type and message_digest_password are
+              mandatory. Valid value is an integer and 'default'.
+        required: false
+        default: null
+    message_digest_algorithm_type:
+        description:
+            - Algorithm used for authentication among neighboring routers
+              within an area. Valid values is 'md5'.
+        required: false
+        choices: ['md5']
+        default: null
+    message_digest_encryption_type:
+        description:
+            - Specifies the scheme used for encrypting message_digest_password.
+              Valid values are '3des' or 'cisco_type_7' encryption.
+        required: false
+        choices: ['cisco_type_7','3des']
+        default: null
+    message_digest_password:
+        description:
+            - Specifies the message_digest password. Valid value is a string.
         required: false
         default: null
     state:
@@ -471,12 +528,28 @@ def load_config(module, candidate):
     return result
 # END OF COMMON CODE
 
+BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
+BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
+BOOLEANS = BOOLEANS_TRUE + BOOLEANS_FALSE
+BOOL_PARAMS = [
+    'passive_interface',
+    'message_digest'
+]
 PARAM_TO_COMMAND_KEYMAP = {
     'cost': 'ip ospf cost',
     'ospf': 'ip router ospf',
-    'area': 'ip router ospf'
+    'area': 'ip router ospf',
+    'hello_interval': 'ip ospf hello-interval',
+    'dead_interval': 'ip ospf dead-interval',
+    'passive_interface': 'ip ospf passive-interface',
+    'message_digest': 'ip ospf authentication message-digest',
+    'message_digest_key_id': 'ip ospf message-digest-key',
+    'message_digest_algorithm_type': 'ip ospf message-digest-key options',
+    'message_digest_encryption_type': 'ip ospf message-digest-key options',
+    'message_digest_password': 'ip ospf message-digest-key options',
 }
-PARAM_TO_DEFAULT_KEYMAP = {}
+PARAM_TO_DEFAULT_KEYMAP = {
+}
 
 
 def invoke(name, *args, **kwargs):
@@ -486,6 +559,7 @@ def invoke(name, *args, **kwargs):
 
 
 def get_custom_value(arg, config, module):
+    value = ''
     if arg == 'ospf':
         REGEX = re.compile(r'(?:ip router ospf\s)(?P<value>.*)$', re.M)
         value = ''
@@ -499,18 +573,61 @@ def get_custom_value(arg, config, module):
         if 'ip router ospf' in config:
             parsed = REGEX.search(config).group('value').split()
             value = parsed[2]
-    return value
 
+    elif arg.startswith('message_digest_'):
+        REGEX = re.compile(r'(?:ip ospf message-digest-key\s)(?P<value>.*)$', re.M)
+        value = ''
+        if 'ip ospf message-digest-key' in config:
+            value_list = REGEX.search(config).group('value').split()
+            if arg == 'message_digest_key_id':
+                value = value_list[0]
+            elif arg == 'message_digest_algorithm_type':
+                value = value_list[1]
+            elif arg == 'message_digest_encryption_type':
+                value = value_list[2]
+                if value == '3':
+                    value = '3des'
+                elif value == '7':
+                    value = 'cisco_type_7'
+            elif arg == 'message_digest_password':
+                value = value_list[3]
+
+    elif arg == 'passive_interface':
+        REGEX = re.compile(r'\s+{0}\s*$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
+        NO_REGEX = re.compile(r'\s+no\s+{0}\s*$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
+        value = False
+        try:
+            if NO_REGEX.search(config):
+                value = False
+            elif REGEX.search(config):
+                value = True
+        except TypeError:
+            value = False
+
+    return value
 
 
 def get_value(arg, config, module):
     custom = [
         'ospf',
-        'area'
+        'area',
+        'message_digest_key_id',
+        'message_digest_algorithm_type',
+        'message_digest_encryption_type',
+        'message_digest_password',
+        'passive_interface'
     ]
 
     if arg in custom:
         value = get_custom_value(arg, config, module)
+    elif arg in BOOL_PARAMS:
+        REGEX = re.compile(r'\s+{0}\s*$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
+        value = False
+        try:
+            if REGEX.search(config):
+                value = True
+        except TypeError:
+            value = False
     else:
         REGEX = re.compile(r'(?:{0}\s)(?P<value>.*)$'.format(PARAM_TO_COMMAND_KEYMAP[arg]), re.M)
         value = ''
@@ -523,15 +640,12 @@ def get_existing(module, args):
     existing = {}
     netcfg = get_config(module)
     parents = ['interface {0}'.format(module.params['interface'].capitalize())]
-
     config = netcfg.get_section(parents)
-
     if 'ospf' in config:
         for arg in args:
             if arg not in ['interface']:
                 existing[arg] = get_value(arg, config, module)
         existing['interface'] = module.params['interface']
-
     return existing
 
 
@@ -548,6 +662,59 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
+def get_default_commands(existing, proposed, existing_commands, key, module):
+    commands = list()
+    existing_value = existing_commands.get(key)
+    if key.startswith('ip ospf message-digest-key'):
+        check = False
+        for param in ['message_digest_encryption_type',
+                      'message_digest_algorithm_type',
+                      'message_digest_password']:
+            if existing[param] == proposed[param]:
+                check = True
+        if check:
+            if existing['message_digest_encryption_type'] == '3des':
+                encryption_type = '3'
+            elif existing['message_digest_encryption_type'] == 'cisco_type_7':
+                encryption_type = '7'
+            command = 'no {0} {1} {2} {3} {4}'.format(
+                        key,
+                        existing['message_digest_key_id'],
+                        existing['message_digest_algorithm_type'],
+                        encryption_type,
+                        existing['message_digest_password'])
+            commands.append(command)
+    else:
+        commands.append('no {0} {1}'.format(key, existing_value))
+    return commands
+
+
+def get_custom_command(existing_cmd, proposed, key, module):
+    commands = list()
+
+    if key == 'ip router ospf':
+        command = '{0} {1} area {2}'.format(key, proposed['ospf'],
+                                            proposed['area'])
+        if command not in existing_cmd:
+            commands.append(command)
+
+    elif key.startswith('ip ospf message-digest-key'):
+        if (proposed['message_digest_key_id'] != 'default' and
+            'options' not in key):
+            if proposed['message_digest_encryption_type'] == '3des':
+                encryption_type = '3'
+            elif proposed['message_digest_encryption_type'] == 'cisco_type_7':
+                encryption_type = '7'
+            command = '{0} {1} {2} {3} {4}'.format(
+                                key,
+                                proposed['message_digest_key_id'],
+                                proposed['message_digest_algorithm_type'],
+                                encryption_type,
+                                proposed['message_digest_password'])
+            commands.append(command)
+    return commands
+
+
 def state_present(module, existing, proposed, candidate):
     commands = list()
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, proposed)
@@ -556,27 +723,24 @@ def state_present(module, existing, proposed, candidate):
     for key, value in proposed_commands.iteritems():
         if value is True:
             commands.append(key)
-
         elif value is False:
             commands.append('no {0}'.format(key))
-
         elif value == 'default':
             if existing_commands.get(key):
-                existing_value = existing_commands.get(key)
-                commands.append('no {0} {1}'.format(key, existing_value))
+                commands.extend(get_default_commands(existing, proposed,
+                                                     existing_commands, key,
+                                                     module))
         else:
-            if key == 'ip router ospf':
-                command = '{0} {1} area {2}'.format(key, proposed['ospf'],
-                                                    proposed['area'])
-                if command not in commands:
-                    commands.append(command)
+            if (key == 'ip router ospf' or
+                    key.startswith('ip ospf message-digest-key')):
+                commands.extend(get_custom_command(commands, proposed,
+                                                   key, module))
             else:
                 command = '{0} {1}'.format(key, value.lower())
                 commands.append(command)
 
     if commands:
         parents = ['interface {0}'.format(module.params['interface'].capitalize())]
-
         candidate.add(commands, parents=parents)
 
 
@@ -584,12 +748,34 @@ def state_absent(module, existing, proposed, candidate):
     commands = []
     parents = ['interface {0}'.format(module.params['interface'].capitalize())]
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
-    existing_commands['ip router ospf'] = '{0} area {1}'.format(
-                                        proposed['ospf'], proposed['area'])
+
     for key, value in existing_commands.iteritems():
         if value:
-            existing_value = existing_commands.get(key)
-            commands.append('no {0} {1}'.format(key, existing_value))
+            if key.startswith('ip ospf message-digest-key'):
+                if 'options' not in key:
+                    if existing['message_digest_encryption_type'] == '3des':
+                        encryption_type = '3'
+                    elif existing['message_digest_encryption_type'] == 'cisco_type_7':
+                        encryption_type = '7'
+                    command = 'no {0} {1} {2} {3} {4}'.format(
+                                        key,
+                                        existing['message_digest_key_id'],
+                                        existing['message_digest_algorithm_type'],
+                                        encryption_type,
+                                        existing['message_digest_password'])
+                    commands.append(command)
+            elif key in ['ip ospf authentication message-digest',
+                         'ip ospf passive-interface']:
+                if value:
+                    commands.append('no {0}'.format(key))
+            elif key == 'ip router ospf':
+                command = 'no {0} {1} area {2}'.format(key, proposed['ospf'],
+                                                    proposed['area'])
+                if command not in commands:
+                    commands.append(command)
+            else:
+                existing_value = existing_commands.get(key)
+                commands.append('no {0} {1}'.format(key, existing_value))
 
     candidate.add(commands, parents=parents)
 
@@ -611,6 +797,16 @@ def main():
             ospf=dict(required=True, type='str'),
             area=dict(required=True, type='str'),
             cost=dict(required=False, type='str'),
+            hello_interval=dict(required=False, type='str'),
+            dead_interval=dict(required=False, type='str'),
+            passive_interface=dict(required=False, type='bool', choices=BOOLEANS),
+            message_digest=dict(required=False, type='bool', choices=BOOLEANS),
+            message_digest_key_id=dict(required=False, type='str'),
+            message_digest_algorithm_type=dict(required=False, type='str',
+                                               choices=['md5']),
+            message_digest_encryption_type=dict(required=False, type='str',
+                                                choices=['cisco_type_7','3des']),
+            message_digest_password=dict(required=False, type='str'),
             m_facts=dict(required=False, default=False, type='bool'),
             state=dict(choices=['present', 'absent'], default='present',
                        required=False),
@@ -618,15 +814,33 @@ def main():
     )
     argument_spec.update(nxos_argument_spec)
     module = get_module(argument_spec=argument_spec,
+                        required_together=[['message_digest_key_id',
+                                            'message_digest_algorithm_type',
+                                            'message_digest_encryption_type',
+                                            'message_digest_password']],
                         supports_check_mode=True)
 
-    state = module.params['state']
+    for param in ['message_digest_encryption_type',
+                  'message_digest_algorithm_type',
+                  'message_digest_password']:
+        if module.params[param] == 'default':
+            module.exit_json(msg='Use message_digest_key_id=default to remove'
+                                 ' an existing authentication configuration')
 
+    state = module.params['state']
     args =  [
             'interface',
             'ospf',
             'area',
-            'cost'
+            'cost',
+            'hello_interval',
+            'dead_interval',
+            'passive_interface',
+            'message_digest',
+            'message_digest_key_id',
+            'message_digest_algorithm_type',
+            'message_digest_encryption_type',
+            'message_digest_password'
         ]
 
     existing = invoke('get_existing', module, args)
@@ -637,11 +851,11 @@ def main():
     proposed = {}
     for key, value in proposed_args.iteritems():
         if key != 'interface':
-            if value.lower() == 'true':
+            if str(value).lower() == 'true':
                 value = True
-            elif value.lower() == 'false':
+            elif str(value).lower() == 'false':
                 value = False
-            elif value.lower() == 'default':
+            elif str(value).lower() == 'default':
                 value = PARAM_TO_DEFAULT_KEYMAP.get(key)
                 if value is None:
                     value = 'default'
@@ -650,7 +864,10 @@ def main():
 
     proposed['area'] = normalize_area(proposed['area'], module)
     result = {}
-    if state == 'present' or (state == 'absent' and existing):
+    if (state == 'present' or (state == 'absent' and
+        existing.get('ospf') == proposed['ospf'] and
+        existing.get('area') == proposed['area'])):
+
         candidate = CustomNetworkConfig(indent=3)
         invoke('state_%s' % state, module, existing, proposed, candidate)
 

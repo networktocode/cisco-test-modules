@@ -1,6 +1,6 @@
 ---
 
-- name: TESTING NXOS_VXLAN_VTEP_VNI
+- name: TESTING NXOS_INTERFACE_OSPF
   hosts: n9k2
   connection: local
   gather_facts: no
@@ -32,8 +32,6 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
-
-  - debug: var=data
 
   - assert:
       that:
@@ -120,3 +118,251 @@
   - assert:
       that:
         - data.changed == false
+
+  - name: configure hello and dead intervals
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      hello_interval: 50
+      dead_interval: 150
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['hello_interval'] == '50'
+        - data.end_state['dead_interval'] == '150'
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      hello_interval: 50
+      dead_interval: 150
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure default hello and dead intervals
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      hello_interval: default
+      dead_interval: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['hello_interval'] == ''
+        - data.end_state['dead_interval'] == ''
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      hello_interval: default
+      dead_interval: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure passive-interface
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      passive_interface: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['passive_interface'] == true
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      passive_interface: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove passive-interface
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      passive_interface: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['passive_interface'] == false
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      passive_interface: false
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure message-digest password
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      message_digest: true
+      message_digest_key_id: 1
+      message_digest_algorithm_type: md5
+      message_digest_encryption_type: 3des
+      message_digest_password: 386c0565965f89de
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['message_digest'] == true
+        - data.end_state['message_digest_key_id'] == '1'
+        - data.end_state['message_digest_algorithm_type'] == 'md5'
+        - data.end_state['message_digest_encryption_type'] == '3des'
+        - data.end_state['message_digest_password'] == '386c0565965f89de'
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      message_digest: true
+      message_digest_key_id: 1
+      message_digest_algorithm_type: md5
+      message_digest_encryption_type: 3des
+      message_digest_password: 386c0565965f89de
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove message-digest password
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      message_digest: true
+      message_digest_key_id: default
+      message_digest_algorithm_type: md5
+      message_digest_encryption_type: 3des
+      message_digest_password: 386c0565965f89de
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['ospf'] == '1'
+        - data.end_state['area'] == '0.0.0.0'
+        - data.end_state['message_digest'] == true
+        - data.end_state['message_digest_key_id'] == ''
+        - data.end_state['message_digest_algorithm_type'] == ''
+        - data.end_state['message_digest_encryption_type'] == ''
+        - data.end_state['message_digest_password'] == ''
+
+  - name: idempotency check
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      message_digest: true
+      message_digest_key_id: default
+      message_digest_algorithm_type: md5
+      message_digest_encryption_type: 3des
+      message_digest_password: 386c0565965f89de
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure OSPF inside interface
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - name: remove OSPF area 0
+    nxos_interface_ospf:
+      interface: ethernet1/32
+      ospf: 1
+      area: "0"
+      state: absent
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
