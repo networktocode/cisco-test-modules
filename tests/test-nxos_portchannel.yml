@@ -1,0 +1,344 @@
+---
+
+- name: TESTING NXOS_PORTCHANNEL
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: ENSURE PORTCHANNEL11 IS ABSENT
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: ENSURE PORTCHANNEL12 IS ABSENT
+    nxos_portchannel:
+      group: 12
+      members: ['Ethernet2/5','Ethernet2/6']
+      mode: 'on'
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: ENSURE PORTCHANNEL101 IS ABSENT
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29', 'Ethernet1/30']
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: ENSURE PORTCHANNEL11 IS CONFIGURED WITH ON MODE
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['mode'] == 'on'
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ENSURE PORTCHANNEL12 IS CONFIGURED WITH ON MODE
+    nxos_portchannel:
+      group: 12
+      members: ['Ethernet2/5','Ethernet2/6']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['mode'] == 'on'
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 12
+      members: ['Ethernet2/5','Ethernet2/6']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ENSURE PORTCHANNEL101 IS CONFIGURED WITH ON MODE
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['mode'] == 'on'
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+        - data.end_state['mode'] == 'on'
+
+  - name: ADDING A MEMBER TO PORTCHANNEL101
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29', 'Ethernet1/30']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - "'Ethernet1/30' in data.end_state.get('members')"
+
+  - name: IDEMPOTENCY CheCK
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29', 'Ethernet1/30']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: REMOVE A MEMBER FROM PORTCHANNEL101
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29']
+      mode: 'on'
+      state: present
+      force: "true"
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - "'Ethernet1/30' not in data.end_state.get('members')"
+
+  - name: IDEMPOTENCY CheCK
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29']
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: MODIFY PORTCHANNEL101 MODE TO PASSIVE
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29', 'Ethernet1/30']
+      mode: 'passive'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['mode'] == 'passive'
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 101
+      members: ['Ethernet1/28','Ethernet1/29', 'Ethernet1/30']
+      mode: 'passive'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ENSURE PORTCHANNEL11 IS CONFIGURED WITH PROPER MODE
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'active'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['mode'] == 'active'
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'active'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ENSURE PORTCHANNEL11 IS PRESENT ON THE DEVICE WITH PROPER MIN_LINKS PARAM
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'on'
+      min_links: "2"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['group'] == '11'
+        - data.end_state['mode'] == 'on'
+        - data.end_state['min_links'] == '2'
+        - "'Ethernet1/6' in data.end_state.get('members')"
+        - "'Ethernet1/7' in data.end_state.get('members')"
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'on'
+      min_links: "2"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: CHANGE PORTCHANNEL11 MODE TO PASSIVE
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'passive'
+      min_links: "2"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['group'] == '11'
+        - data.end_state['mode'] == 'passive'
+        - data.end_state['min_links'] == '2'
+        - "'Ethernet1/6' in data.end_state.get('members')"
+        - "'Ethernet1/7' in data.end_state.get('members')"
+
+  - name: IDEMPOTENCY CHECK
+    nxos_portchannel:
+      group: 11
+      members: ['Ethernet1/6','Ethernet1/7']
+      mode: 'passive'
+      min_links: "2"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ENSURE IT FAILS DUE TO UNSUPPORTED PARAMS COMBINATION
+    nxos_portchannel:
+      group: 11
+      min_links: 3
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+    ignore_errors: true
+
+  - assert:
+      that:
+        - data | failed
+
+  - name: ENSURE IT FAILS DUE TO UNSUPPORTED PARAMS COMBINATION
+    nxos_portchannel:
+      group: 11
+      mode: 'on'
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+    ignore_errors: true
+
+  - assert:
+      that:
+        - data | failed
+
+  - name: ENSURE PORTCHANNEL11 IS NOT PRESENT ON THE DEVICE
+    nxos_portchannel:
+      group: 11
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state == {}
+
+  - name: ATTEMPT TO REMOVE A NOT EXISTING PORTCHANNEL
+    nxos_portchannel:
+      group: 11
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+        - data.end_state == {}
