@@ -27,7 +27,7 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - State 'absent' removes the whole BGP neighbor configuration
-    - 'default' restores params default value
+    - 'default', where supported, restores params default value
 options:
     asn:
         description:
