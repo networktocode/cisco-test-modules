@@ -5,29 +5,27 @@
   connection: local
   gather_facts: no
 
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
 
   tasks:
   - name: remove the bgp process
     nxos_bgp:
       asn=65535
-      host={{ inventory_hostname }}
       state=absent
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
-    tags: test
-
 
   - name: prepare the device
     nxos_bgp:
       asn=65535
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -36,11 +34,8 @@
       asn=65535
       vrf=test
       router_id=1.1.1.1
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -55,11 +50,8 @@
       asn=65535
       vrf=test
       router_id=1.1.1.1
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -88,11 +80,8 @@
       neighbor_down_fib_accelerate=true
       shutdown=true
       suppress_fib_pending=true
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -139,11 +128,8 @@
       neighbor_down_fib_accelerate=true
       shutdown=true
       suppress_fib_pending=true
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -172,11 +158,8 @@
       neighbor_down_fib_accelerate=default
       shutdown=default
       suppress_fib_pending=default
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -223,11 +206,8 @@
       neighbor_down_fib_accelerate=default
       shutdown=default
       suppress_fib_pending=default
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -240,11 +220,8 @@
       asn=65535
       confederation_id=20
       confederation_peers="20 40"
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -259,11 +236,8 @@
       asn=65535
       confederation_id=20
       confederation_peers="20 40"
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -275,11 +249,8 @@
     nxos_bgp:
       asn=65535
       confederation_peers=50
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -293,11 +264,8 @@
     nxos_bgp:
       asn=65535
       confederation_peers=50
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -309,11 +277,8 @@
     nxos_bgp:
       asn=65535
       event_history_cli=size_medium
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -326,11 +291,8 @@
     nxos_bgp:
       asn=65535
       event_history_cli=size_medium
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -345,11 +307,8 @@
       cluster_id=20
       timer_bgp_hold=80
       timer_bgp_keepalive=30
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -368,11 +327,8 @@
       cluster_id=20
       timer_bgp_hold=80
       timer_bgp_keepalive=30
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -386,11 +342,8 @@
       local_as=10
       confederation_id=20
       vrf=test
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -406,11 +359,179 @@
       local_as=10
       confederation_id=20
       vrf=test
-      host={{ inventory_hostname }}
       state=present
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure graceful_restart_timers_restart and graceful_restart_timers_stalepath_time params
+    nxos_bgp:
+      asn=65535
+      graceful_restart_timers_restart=100
+      graceful_restart_timers_stalepath_time=400
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['graceful_restart_timers_restart'] == '100'
+        - data.end_state['graceful_restart_timers_stalepath_time'] == '400'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      graceful_restart_timers_restart=100
+      graceful_restart_timers_stalepath_time=400
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set graceful_restart_timers_restart and graceful_restart_timers_stalepath_time params to their defaults
+    nxos_bgp:
+      asn=65535
+      graceful_restart_timers_restart=default
+      graceful_restart_timers_stalepath_time=default
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['graceful_restart_timers_restart'] == '120'
+        - data.end_state['graceful_restart_timers_stalepath_time'] == '300'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      graceful_restart_timers_restart=default
+      graceful_restart_timers_stalepath_time=default
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure disable_policy_batching_ipv4_prefix_list param
+    nxos_bgp:
+      asn=65535
+      disable_policy_batching_ipv4_prefix_list=test
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['disable_policy_batching_ipv4_prefix_list'] == 'test'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      disable_policy_batching_ipv4_prefix_list=test
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure maxas_limit and reconnect_interval params
+    nxos_bgp:
+      asn=65535
+      maxas_limit=100
+      reconnect_interval=40
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['maxas_limit'] == '100'
+        - data.end_state['reconnect_interval'] == '40'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      maxas_limit=100
+      reconnect_interval=40
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure timer_bestpath_limit param
+    nxos_bgp:
+      asn=65535
+      timer_bestpath_limit=200
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['timer_bestpath_limit'] == '200'
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      timer_bestpath_limit=200
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set timer_bestpath_limit to its default
+    nxos_bgp:
+      asn=65535
+      timer_bestpath_limit=default
+      state=present
+      provider={{ nxos_provider }}
+      m_facts=true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['timer_bestpath_limit'] == ''
+
+  - name: idempotency check
+    nxos_bgp:
+      asn=65535
+      timer_bestpath_limit=default
+      state=present
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
 
@@ -421,11 +542,7 @@
   - name: remove the bgp process
     nxos_bgp:
       asn=65535
-      host={{ inventory_hostname }}
       state=absent
-      transport=nxapi
-      username={{ un }}
-      password={{ pwd }}
+      provider={{ nxos_provider }}
       m_facts=true
     register: data
-    tags: test

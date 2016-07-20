@@ -29,7 +29,7 @@ notes:
     - State 'absent' removes the whole BGP ASN configuration when VRF is
       'default' or the whole VRF instance within the BGP process when using
       a different VRF.
-    - 'default' restores params default value
+    - 'default', when supported, restores params default value
     - Configuring global parmas is only permitted if VRF is 'default'
 options:
     asn:
@@ -731,7 +731,6 @@ GLOBAL_PARAMS = [
 PARAM_TO_DEFAULT_KEYMAP = {
     'timer_bgp_keepalive': '60',
     'timer_bgp_hold': '180',
-    'timer_bestpath_limit': '300',
     'graceful_restart': True,
     'graceful_restart_timers_restart': '120',
     'graceful_restart_timers_stalepath_time': '300',
@@ -1053,7 +1052,7 @@ def main():
             flush_routes=dict(required=False, choices=ACCEPTED),
             graceful_restart=dict(required=False, choices=ACCEPTED),
             graceful_restart_helper=dict(required=False, choices=ACCEPTED),
-            graceful_restart_timers_restart=dict(required=False, choices=ACCEPTED),
+            graceful_restart_timers_restart=dict(required=False, type='str'),
             graceful_restart_timers_stalepath_time=dict(required=False, type='str'),
             isolate=dict(required=False, choices=ACCEPTED),
             local_as=dict(required=False, type='str'),
@@ -1184,8 +1183,6 @@ def main():
         result['warnings'] = WARNINGS
 
     module.exit_json(**result)
-
-
 
 
 from ansible.module_utils.basic import *
