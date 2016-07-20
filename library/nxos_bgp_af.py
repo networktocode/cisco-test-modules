@@ -27,7 +27,7 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - State 'absent' removes the whole BGP ASN configuration
-    - 'default' restores params default value
+    - 'default', where supported, restores params default value
 options:
     asn:
         description:
@@ -36,7 +36,8 @@ options:
         required: true
     vrf:
         description:
-            - Name of the VRF. The name 'default' is a valid VRF representing the global bgp.
+            - Name of the VRF. The name 'default' is a valid VRF representing
+              the global bgp.
         required: true
     afi:
         description:
@@ -940,11 +941,10 @@ def apply_key_map(key_map, table):
     return new_dict
 
 
-def fix_proposed(module, proposed):
+def fix_proposed(module, proposed, existing):
     commands = list()
     command = ''
     fixed_proposed = {}
-
     for key, value in proposed.iteritems():
         if key in DAMPENING_PARAMS:
             if value != 'default':
@@ -960,7 +960,8 @@ def fix_proposed(module, proposed):
                         existing['dampening_reuse_time'],
                         existing['dampening_suppress_time'],
                         existing['dampening_max_suppress_time']))
-
+            if 'default' in command:
+                command = ''
         elif key.startswith('distance'):
             command = 'distance {0} {1} {2}'.format(
                 proposed.get('distance_ebgp'),
@@ -1061,8 +1062,8 @@ def get_table_map_command(module, existing, key, value):
                 command += ' filter'
             commands.append(command)
         else:
-            if existing.get('table_map') == module.params['table_map']:
-                command = 'no {0} {1}'.format(key, module.params['table_map'])
+            if existing.get('table_map'):
+                command = 'no {0} {1}'.format(key, existing.get('table_map'))
                 commands.append(command)
     return commands
 
@@ -1079,7 +1080,7 @@ def get_default_table_map_filter(existing):
 
 
 def state_present(module, existing, proposed, candidate):
-    fixed_proposed, commands = fix_proposed(module, proposed)
+    fixed_proposed, commands = fix_proposed(module, proposed, existing)
     proposed_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, fixed_proposed)
     existing_commands = apply_key_map(PARAM_TO_COMMAND_KEYMAP, existing)
     for key, value in proposed_commands.iteritems():

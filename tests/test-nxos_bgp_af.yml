@@ -20,7 +20,6 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
-    tags: test
 
   - name: instantiate ipv6 unicast address-family
     nxos_bgp_af:
@@ -389,6 +388,319 @@
         - ['isis 2', 'rm_isis']
         - ['ospf 3', 'rm_ospf']
         - ['rip 4', 'rm_rip']
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure additional_paths_selection param
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      additional_paths_selection: test
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['additional_paths_selection'] == 'test'
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      additional_paths_selection: test
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure dampen_igp_metric param
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampen_igp_metric: 1000
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampen_igp_metric'] == '1000'
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampen_igp_metric: 1000
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set dampen_igp_metric param to default
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampen_igp_metric: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampen_igp_metric'] == '600'
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampen_igp_metric: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: set dampening timers
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_half_time: 30
+      dampening_max_suppress_time: 200
+      dampening_reuse_time: 200
+      dampening_suppress_time: 2000
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampening_half_time'] == '30'
+        - data.end_state['dampening_max_suppress_time'] == '200'
+        - data.end_state['dampening_reuse_time'] == '200'
+        - data.end_state['dampening_suppress_time'] == '2000'
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_half_time: 30
+      dampening_max_suppress_time: 200
+      dampening_reuse_time: 200
+      dampening_suppress_time: 2000
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove dampening timers
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_half_time: default
+      dampening_max_suppress_time: default
+      dampening_reuse_time: default
+      dampening_suppress_time: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampening_half_time'] == ''
+        - data.end_state['dampening_max_suppress_time'] == ''
+        - data.end_state['dampening_reuse_time'] == ''
+        - data.end_state['dampening_suppress_time'] == ''
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_half_time: default
+      dampening_max_suppress_time: default
+      dampening_reuse_time: default
+      dampening_suppress_time: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure dampening_routemap, default_metric and next_hop_route_map
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_routemap: test
+      default_metric: 1000
+      next_hop_route_map: next_hop_test_map
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampening_routemap'] == 'test'
+        - data.end_state['default_metric'] == '1000'
+        - data.end_state['next_hop_route_map'] == 'next_hop_test_map'
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_routemap: test
+      default_metric: 1000
+      next_hop_route_map: next_hop_test_map
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove dampening_routemap, default_metric and next_hop_route_map
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_routemap: default
+      default_metric: default
+      next_hop_route_map: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['dampening_routemap'] == ''
+        - data.end_state['default_metric'] == ''
+        - data.end_state['next_hop_route_map'] == ''
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      dampening_routemap: default
+      default_metric: default
+      next_hop_route_map: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure table_map and filter
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      table_map: test
+      table_map_filter: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['table_map'] == 'test'
+        - data.end_state['table_map_filter'] == true
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      table_map: test
+      table_map_filter: true
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove table_map
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      table_map: default
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['table_map'] == ''
+        - data.end_state['table_map_filter'] == false
+
+  - name: idempotency check
+    nxos_bgp_af:
+      asn: 65535
+      afi: ipv4
+      safi: unicast
+      table_map: default
       state: present
       provider: "{{ nxos_provider }}"
       m_facts: true
