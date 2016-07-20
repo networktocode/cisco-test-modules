@@ -352,37 +352,6 @@
       that:
         - data.changed == false
 
-  - name: enable log-neighbor-changes
-    nxos_bgp_neighbor:
-      asn: 65535
-      neighbor: 2.2.2.0/24
-      vrf: test
-      log_neighbor_changes: enable
-      state: present
-      provider: "{{ nxos_provider }}"
-      m_facts: true
-    register: data
-
-  - assert:
-      that:
-        - data.changed == true
-        - data.end_state['log_neighbor_changes'] == "enable"
-
-  - name: idempotency check
-    nxos_bgp_neighbor:
-      asn: 65535
-      neighbor: 2.2.2.0/24
-      vrf: test
-      log_neighbor_changes: enable
-      state: present
-      provider: "{{ nxos_provider }}"
-      m_facts: true
-    register: data
-
-  - assert:
-      that:
-        - data.changed == false
-
   - name: disable log-neighbor-changes
     nxos_bgp_neighbor:
       asn: 65535
@@ -393,11 +362,13 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
+    tags: meh
 
   - assert:
       that:
         - data.changed == true
         - data.end_state['log_neighbor_changes'] == "disable"
+    tags: meh
 
   - name: idempotency check
     nxos_bgp_neighbor:
@@ -409,11 +380,47 @@
       provider: "{{ nxos_provider }}"
       m_facts: true
     register: data
+    tags: meh
 
   - assert:
       that:
         - data.changed == false
+    tags: meh
 
+  - name: enable log-neighbor-changes
+    nxos_bgp_neighbor:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      log_neighbor_changes: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: meh
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['log_neighbor_changes'] == "enable"
+    tags: meh
+
+  - name: idempotency check
+    nxos_bgp_neighbor:
+      asn: 65535
+      neighbor: 2.2.2.0/24
+      vrf: test
+      log_neighbor_changes: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+    tags: meh
+
+  - assert:
+      that:
+        - data.changed == false
+    tags: meh
   - name: remove the bgp process
     nxos_bgp:
       asn: 65535

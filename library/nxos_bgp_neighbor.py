@@ -88,7 +88,7 @@ options:
             - Specify whether or not to enable log messages for neighbor
              up/down event.
         required: false
-        choices: ['enable', 'disable']
+        choices: ['enable', 'disable', 'inherit']
         default: null
     low_memory_exempt:
         description:
@@ -112,10 +112,9 @@ options:
     pwd_type:
         description:
             - Specify the encryption type the password will use. Valid values
-              are '3des' or 'cisco_type_7' encryption, and
-              'default', which removes existing password.
+              are '3des' or 'cisco_type_7' encryption.
         required: false
-        choices: ['3des', 'cisco_type_7', 'default']
+        choices: ['3des', 'cisco_type_7']
         default: null
     remote_as:
         description:
@@ -802,9 +801,12 @@ def state_present(module, existing, proposed, candidate):
         else:
             if key == 'log-neighbor-changes':
                 if value == 'enable':
-                    command = '{0}'.format(key)
-                else:
-                    command = '{0} {1}'.format(key, value)
+                    commands.append('{0}'.format(key))
+                elif value == 'disable':
+                    commands.append('{0} {1}'.format(key, value))
+                elif value == 'inherit':
+                    if existing_commands.get(key):
+                        commands.append('no {0}'.format(key))
             elif key == 'password':
                 pwd_type = module.params['pwd_type']
                 if pwd_type == '3des':
@@ -871,7 +873,7 @@ def main():
             dynamic_capability=dict(required=False, type='str', choices=ACCEPTED),
             ebgp_multihop=dict(required=False, type='str'),
             local_as=dict(required=False, type='str'),
-            log_neighbor_changes=dict(required=False, type='str', choices=['enable', 'disable']),
+            log_neighbor_changes=dict(required=False, type='str', choices=['enable', 'disable', 'inherit']),
             low_memory_exempt=dict(required=False, type='str', choices=ACCEPTED),
             maximum_peers=dict(required=False, type='str'),
             pwd=dict(required=False, type='str'),
