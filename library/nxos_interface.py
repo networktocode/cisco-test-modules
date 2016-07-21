@@ -30,6 +30,8 @@ notes:
     - Be cautious of platform specific idiosyncrasies. For example,
       when you default a loopback interface, the admin state toggles
       on certain versions of NX-OS.
+    - The nxos_overlay_global anycast_gateway_mac attribute must be set before
+      setting the fabric_forwarding_anycast_gateway property.
 options:
     interface:
         description:
@@ -65,6 +67,12 @@ options:
         required: false
         default: null
         choices: ['enable','disable']
+    fabric_forwarding_anycast_gateway:
+        description:
+            - Associate SVI with anycast gateway under VLAN configuration mode.
+        required: false
+        default: null
+        choices: ['true','false']
     state:
         description:
             - Specify desired state of the resource
@@ -535,6 +543,10 @@ def load_config(module, candidate):
     return result
 # END OF COMMON CODE
 
+BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 'True', 1, True]
+BOOLEANS_FALSE = ['no', 'off', '0', 'false', 'False', 0, False]
+ACCEPTED = BOOLEANS_TRUE + BOOLEANS_FALSE
+
 def is_default_interface(interface, module):
     """Checks to see if interface exists and if it is a default config
 
@@ -700,6 +712,10 @@ def get_interface(intf, module):
                 interface['ip_forward'] = 'enable'
             else:
                 interface['ip_forward'] = 'disable'
+            if 'fabric forwarding mode anycast-gateway' in body:
+                interface['fabric_forwarding_anycast_gateway'] = True
+            else:
+                interface['fabric_forwarding_anycast_gateway'] = False
 
         elif intf_type == 'loopback':
             key_map.update(base_key_map)
@@ -744,7 +760,7 @@ def get_intf_args(interface):
     if intf_type in ['ethernet', 'portchannel']:
         arguments.extend(['mode'])
     if intf_type == 'svi':
-        arguments.extend(['ip_forward'])
+        arguments.extend(['ip_forward', 'fabric_forwarding_anycast_gateway'])
 
     return arguments
 
@@ -869,10 +885,17 @@ def get_interface_config_commands(interface, intf, existing):
     ip_forward = interface.get('ip_forward')
     if ip_forward:
         if ip_forward == 'enable':
-            command = 'ip forward'
+            commands.append('ip forward')
         else:
-            command = 'no ip forward'
-        commands.append(command)
+            commands.append('no ip forward')
+
+    fabric_forwarding_anycast_gateway = interface.get(
+                                    'fabric_forwarding_anycast_gateway')
+    if fabric_forwarding_anycast_gateway is not None:
+        if fabric_forwarding_anycast_gateway is True:
+            commands.append('fabric forwarding mode anycast-gateway')
+        elif fabric_forwarding_anycast_gateway is False:
+            commands.append('no fabric forwarding mode anycast-gateway')
 
     if commands:
         commands.insert(0, 'interface ' + intf)
@@ -898,7 +921,7 @@ def get_proposed(existing, normalized_interface, args):
     # retrieves proper interface params from args (user defined params)
     for param in allowed_params:
         temp = args.get(param)
-        if temp:
+        if temp is not None:
             proposed[param] = temp
 
     return proposed
@@ -1018,6 +1041,8 @@ def main():
         interface_type=dict(required=False,
                             choices=['loopback', 'portchannel', 'svi', 'nve']),
         ip_forward=dict(required=False, choices=['enable', 'disable']),
+        fabric_forwarding_anycast_gateway=dict(required=False, type='bool',
+                                               choices=ACCEPTED),
         state=dict(choices=['absent', 'present', 'default'],
                    default='present', required=False),
         include_defaults=dict(default=True)
@@ -1032,6 +1057,7 @@ def main():
     description = module.params['description']
     mode = module.params['mode']
     ip_forward = module.params['ip_forward']
+    fabric_forwarding_anycast_gateway = module.params['fabric_forwarding_anycast_gateway']
     state = module.params['state']
 
     if interface:
@@ -1047,11 +1073,14 @@ def main():
                 module.fail_json(msg='description and mode params are not '
                                      'supported in this module. Use '
                                      'nxos_vxlan_vtep instead.')
-        if ip_forward and intf_type != 'svi':
-            module.fail_json(msg='The ip_forward feature is only available'
-                                 ' for SVIs.')
+        if ((ip_forward or fabric_forwarding_anycast_gateway) and
+             intf_type != 'svi'):
+            module.fail_json(msg='The ip_forward and '
+                                 'fabric_forwarding_anycast_gateway features '
+                                 ' are only available for SVIs.')
         args = dict(interface=interface, admin_state=admin_state,
-                    description=description, mode=mode, ip_forward=ip_forward)
+                    description=description, mode=mode, ip_forward=ip_forward,
+                    fabric_forwarding_anycast_gateway=fabric_forwarding_anycast_gateway)
 
         if intf_type == 'unknown':
             module.fail_json(
