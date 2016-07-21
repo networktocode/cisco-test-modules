@@ -1,0 +1,190 @@
+---
+
+- name: TESTING NXOS_FEATURE
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: ensure isis is disabled
+    nxos_feature:
+      feature: isis
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'disabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: isis
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure isis is enabled
+    nxos_feature:
+      feature: isis
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'enabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: isis
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure rip is disabled
+    nxos_feature:
+      feature: rip
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'disabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: rip
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure rip is enabled
+    nxos_feature:
+      feature: rip
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'enabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: rip
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure nv overlay is enabled
+    nxos_feature:
+      feature: nv overlay
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'enabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: nve
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure nv overlay is disabled
+    nxos_feature:
+      feature: nve
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'disabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: nv overlay
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure vn-segment-vlan-based is disabled
+    nxos_feature:
+      feature: vn-segment-vlan-based
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'disabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: vnseg_vlan
+      state: disabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: ensure vnseg_vlan is enabled
+    nxos_feature:
+      feature: vnseg_vlan
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.end_state.state == 'enabled'
+
+  - name: idempotency check
+    nxos_feature:
+      feature: vn-segment-vlan-based
+      state: enabled
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
