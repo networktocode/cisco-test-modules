@@ -347,16 +347,6 @@
       that:
         - data.changed == false
 
-  - name: configure OSPF inside interface
-    nxos_interface_ospf:
-      interface: ethernet1/32
-      ospf: 1
-      area: "0"
-      state: present
-      provider: "{{ nxos_provider }}"
-      m_facts: true
-    register: data
-
   - name: remove OSPF area 0
     nxos_interface_ospf:
       interface: ethernet1/32
