@@ -1,3 +1,4 @@
+ate91
 #!/usr/bin/python
 #
 # This file is part of Ansible
@@ -59,6 +60,12 @@ options:
         required: false
         default: null
         choices: ['layer2','layer3']
+    ip_forward:
+        description:
+            - Enable/Disable ip forward feature on SVIs
+        required: false
+        default: null
+        choices: ['enable','disable']
     state:
         description:
             - Specify desired state of the resource
@@ -100,12 +107,16 @@ proposed:
 existing:
     description: k/v pairs of existing switchport
     type: dict
-    sample:  {"admin_state": "up", "description": "None", "interface": "port-channel101", "mode": "layer2", "type": "portchannel"}
+    sample:  {"admin_state": "up", "description": "None",
+              "interface": "port-channel101", "mode": "layer2",
+              "type": "portchannel", "ip_forward": "enable"}
 end_state:
     description: k/v pairs of switchport after module execution
     returned: always
     type: dict or null
-    sample:  {"admin_state": "down", "description": "None", "interface": "port-channel101", "mode": "layer2", "type": "portchannel"}
+    sample:  {"admin_state": "down", "description": "None",
+              "interface": "port-channel101", "mode": "layer2",
+              "type": "portchannel", "ip_forward": "enable"}
 state:
     description: state as sent in from the playbook
     returned: always
@@ -662,7 +673,6 @@ def get_interface(intf, module):
 
     if body:
         interface_table = body['TABLE_interface']['ROW_interface']
-
         intf_type = get_interface_type(intf)
         if intf_type in ['portchannel', 'ethernet']:
             if not interface_table.get('eth_mode'):
@@ -684,6 +694,14 @@ def get_interface(intf, module):
                                                           'nxapibug'))
             interface['description'] = str(attributes.get('description',
                                                           'nxapi_bug'))
+            command = 'show run interface ' + intf
+            body = execute_show_command(command, module,
+                                        command_type='cli_show_ascii')[0]
+            if 'ip forward' in body:
+                interface['ip_forward'] = 'enable'
+            else:
+                interface['ip_forward'] = 'disable'
+
         elif intf_type == 'loopback':
             key_map.update(base_key_map)
             key_map.pop('admin_state')
@@ -726,6 +744,8 @@ def get_intf_args(interface):
 
     if intf_type in ['ethernet', 'portchannel']:
         arguments.extend(['mode'])
+    if intf_type == 'svi':
+        arguments.extend(['ip_forward'])
 
     return arguments
 
@@ -830,7 +850,6 @@ def get_interface_config_commands(interface, intf, existing):
     """
 
     commands = []
-
     desc = interface.get('description')
     if desc:
         commands.append('description {0}'.format(desc))
@@ -846,6 +865,14 @@ def get_interface_config_commands(interface, intf, existing):
     admin_state = interface.get('admin_state')
     if admin_state:
         command = get_admin_state(interface, intf, admin_state)
+        commands.append(command)
+
+    ip_forward = interface.get('ip_forward')
+    if ip_forward:
+        if ip_forward == 'enable':
+            command = 'ip forward'
+        else:
+            command = 'no ip forward'
         commands.append(command)
 
     if commands:
@@ -954,7 +981,10 @@ def execute_show_command(command, module, command_type='cli_show'):
 
 def execute_modified_show_for_cli_text(command, module):
     cmds = [command]
-    response = execute_show(cmds, module, command_type='cli_show_ascii')
+    if module.params['transport'] == 'cli':
+        response = execute_show(cmds, module)
+    else:
+        response = execute_show(cmds, module, command_type='cli_show_ascii')
     body = response
     return body
 
@@ -988,6 +1018,7 @@ def main():
         mode=dict(choices=['layer2', 'layer3'], required=False),
         interface_type=dict(required=False,
                             choices=['loopback', 'portchannel', 'svi', 'nve']),
+        ip_forward=dict(required=False, choices=['enable', 'disable']),
         state=dict(choices=['absent', 'present', 'default'],
                    default='present', required=False),
         include_defaults=dict(default=True)
@@ -1001,6 +1032,7 @@ def main():
     admin_state = module.params['admin_state']
     description = module.params['description']
     mode = module.params['mode']
+    ip_forward = module.params['ip_forward']
     state = module.params['state']
 
     if interface:
@@ -1016,8 +1048,11 @@ def main():
                 module.fail_json(msg='description and mode params are not '
                                      'supported in this module. Use '
                                      'nxos_vxlan_vtep instead.')
+        if ip_forward and intf_type != 'svi':
+            module.fail_json(msg='The ip_forward feature is only available'
+                                 ' for SVIs.')
         args = dict(interface=interface, admin_state=admin_state,
-                    description=description, mode=mode)
+                    description=description, mode=mode, ip_forward=ip_forward)
 
         if intf_type == 'unknown':
             module.fail_json(
@@ -1032,7 +1067,6 @@ def main():
 
     changed = False
     commands = []
-
     if interface:
         delta = dict()
 
