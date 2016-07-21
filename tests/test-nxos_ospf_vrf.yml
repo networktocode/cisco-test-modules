@@ -291,6 +291,35 @@
       that:
         - data.changed == false
 
+  - name: remove log-adjacency-changes
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+        - data.end_state['log_adjacency'] == ''
+
+  - name: idempotency check
+    nxos_ospf_vrf:
+      ospf: 1
+      log_adjacency: default
+      vrf: test
+      m_facts: true
+      provider: "{{ nxos_provider }}"
+      state: present
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
   - name: remove router-id for OSPF 1
     nxos_ospf_vrf:
       ospf: 1
@@ -310,7 +339,7 @@
     nxos_ospf_vrf:
       ospf: 1
       vrf: test
-      router_id: ""
+      router_id: default
       m_facts: true
       provider: "{{ nxos_provider }}"
       state: present
