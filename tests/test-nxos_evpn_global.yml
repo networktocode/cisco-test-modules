@@ -1,0 +1,58 @@
+---
+
+- name: TESTING NXOS_EVPN_GLOBAL
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: enable nv overlay evpn
+    nxos_evpn_global:
+      nv_overlay_evpn: true
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['nv_overlay_evpn'] == true
+
+  - name: idempotency check
+    nxos_evpn_global:
+      nv_overlay_evpn: true
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: disable nv overlay evpn
+    nxos_evpn_global:
+      nv_overlay_evpn: false
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.end_state['nv_overlay_evpn'] == false
+
+  - name: idempotency check
+    nxos_evpn_global:
+      nv_overlay_evpn: false
+      provider: "{{ nxos_provider }}"
+      m_facts: true
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
