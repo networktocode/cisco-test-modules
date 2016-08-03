@@ -524,7 +524,7 @@ def execute_config_command(commands, module):
                          error=str(clie), commands=commands)
 
 
-def get_cli_body_ssh_vrf(command, response):
+def get_cli_body_ssh_vrf(module, command, response):
     """Get response for when transport=cli.  This is kind of a hack and mainly
     needed because these modules were originally written for NX-API.  And
     not every command supports "| json" when using cli/ssh.  As such, we assume
@@ -533,9 +533,9 @@ def get_cli_body_ssh_vrf(command, response):
     when using multiple |.
     """
     command_splitted = command.split('|')
-    if len(command_splitted) > 2:
+    if len(command_splitted) > 2 or 'show run' in command:
         body = response
-    elif 'xml' in response[0]:
+    elif 'xml' in response[0] or response[0] == '\n':
         body = []
     else:
         body = [json.loads(response[0])]
@@ -557,10 +557,11 @@ def execute_show(cmds, module, command_type=None):
 
 def execute_show_command(command, module, command_type='cli_show'):
     if module.params['transport'] == 'cli':
-        command += ' | json'
+        if 'show run' not in command:
+            command += ' | json'
         cmds = [command]
         response = execute_show(cmds, module)
-        body = get_cli_body_ssh_vrf(command, response)
+        body = get_cli_body_ssh_vrf(module, command, response)
     elif module.params['transport'] == 'nxapi':
         cmds = [command]
         body = execute_show(cmds, module, command_type=command_type)
