@@ -531,7 +531,8 @@ def execute_show(cmds, module, command_type=None):
 
 def execute_show_command(command, module, command_type='cli_show'):
     if module.params['transport'] == 'cli':
-        command += ' | json'
+        if 'show run' not in command:
+            command += ' | json'
         cmds = [command]
         response = execute_show(cmds, module)
         body = get_cli_body_ssh_vrf_interface(command, response, module)

@@ -519,7 +519,7 @@ def get_cli_body_ssh(command, response, module):
     """
     if 'xml' in response[0]:
         body = []
-    elif '^' in response[0] or 'show run' in response[0]:
+    elif '^' in response[0] or 'show run' in response[0] or response[0] == '\n':
         body = response
     else:
         try:
