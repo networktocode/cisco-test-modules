@@ -1,0 +1,139 @@
+---
+
+- name: TESTING NXOS_ACL_INTERFACE
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: prepare the device
+    nxos_acl:
+      name: ANSIBLE
+      seq: 10
+      action: permit
+      proto: tcp
+      src: 1.1.1.1/24
+      dest: any
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: prepare the device
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/41
+      direction: egress
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: apply egress acl to ethernet1/41
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/41
+      direction: egress
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/41
+      direction: egress
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: apply ingress acl to ethernet1/42
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/42
+      direction: ingress
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/42
+      direction: ingress
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove acl from ethernet1/42
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/42
+      direction: ingress
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/42
+      direction: ingress
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove acl from ethernet1/41
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/41
+      direction: egress
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl_interface:
+      name: ANSIBLE
+      interface: ethernet1/41
+      direction: egress
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false

@@ -1,0 +1,301 @@
+---
+
+- name: TESTING NXOS_ACL
+  hosts: n9k2
+  connection: local
+  gather_facts: no
+
+  vars:
+      nxos_provider:
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+        transport: nxapi
+        host: "{{ inventory_hostname }}"
+
+  tasks:
+  - name: prepare the device
+    nxos_acl:
+      name: ANSIBLE
+      state: delete_acl
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - name: configure acl ANSIBLE
+    nxos_acl:
+      name: ANSIBLE
+      seq: 10
+      action: permit
+      proto: tcp
+      src: 1.1.1.1/24
+      dest: any
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 10
+      action: permit
+      proto: tcp
+      src: 1.1.1.1/24
+      dest: any
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add seq to acl ANSIBLE
+    nxos_acl:
+      name: ANSIBLE
+      seq: 20
+      action: permit
+      proto: tcp
+      src: any
+      dest: any
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 20
+      action: permit
+      proto: tcp
+      src: any
+      dest: any
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: change existing seq of acl ANSIBLE
+    nxos_acl:
+      name: ANSIBLE
+      seq: 20
+      action: permit
+      proto: tcp
+      src: any
+      dest: 2.2.2.0/24
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 20
+      action: permit
+      proto: tcp
+      src: any
+      dest: 2.2.2.0/24
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add remark to acl ANSIBLE
+    nxos_acl:
+      name: ANSIBLE
+      seq: 30
+      action: remark
+      remark: "testing acls with ansible"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 30
+      action: remark
+      remark: "testing acls with ansible"
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: add remark to acl ANSIBLE
+    nxos_acl:
+      name: ANSIBLE
+      seq: 40
+      action: deny
+      proto: tcp
+      src: any
+      dest: 3.3.3.0/24
+      src_port_op: eq
+      src_port1: 80
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 40
+      action: deny
+      proto: tcp
+      src: any
+      dest: 3.3.3.0/24
+      src_port_op: eq
+      src_port1: 80
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: remove a seq
+    nxos_acl:
+      name: ANSIBLE
+      seq: 40
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 40
+      state: absent
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure more options
+    nxos_acl:
+      name: ANSIBLE
+      seq: 50
+      action: deny
+      proto: tcp
+      src: any
+      dest: 4.4.4.0/24
+      dest_port_op: range
+      dest_port1: 80
+      dest_port2: 90
+      precedence: routine
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 50
+      action: deny
+      proto: tcp
+      src: any
+      dest: 4.4.4.0/24
+      dest_port_op: range
+      dest_port1: 80
+      dest_port2: 90
+      precedence: routine
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
+
+  - name: configure even more options
+    nxos_acl:
+      name: ANSIBLE
+      seq: 60
+      action: permit
+      proto: tcp
+      src: any
+      dest: any
+      dest_port_op: range
+      dest_port1: 90
+      dest_port2: 110
+      precedence: priority
+      log: enable
+      urg: enable
+      ack: enable
+      psh: enable
+      rst: enable
+      syn: enable
+      fin: enable
+      established: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == true
+
+  - name: idempotency check
+    nxos_acl:
+      name: ANSIBLE
+      seq: 60
+      action: permit
+      proto: tcp
+      src: any
+      dest: any
+      dest_port_op: range
+      dest_port1: 90
+      dest_port2: 110
+      precedence: priority
+      log: enable
+      urg: enable
+      ack: enable
+      psh: enable
+      rst: enable
+      syn: enable
+      fin: enable
+      established: enable
+      state: present
+      provider: "{{ nxos_provider }}"
+    register: data
+
+  - assert:
+      that:
+        - data.changed == false
