@@ -1,0 +1,36 @@
+---
+
+  - name: Test nxos_install_os
+    hosts: n9k2
+    connection: local
+    gather_facts: no
+
+    tasks:
+      - block:
+          - name: Install OS
+            nxos_install_os:
+              system_image_file: nxos.7.0.3.I2.2d.bin
+              host: "{{ inventory_hostname }}"
+              username: "{{ un }}"
+              password: "{{ pwd }}"
+        rescue:
+          - name: Wait for device to come back up
+            wait_for:
+              port: 22
+              state: started
+              timeout: 300
+              delay: 60
+              host: "{{ inventory_hostname }}"
+
+          - name: Check installed OS
+            nxos_command:
+              commands:
+                - show version
+              username: "{{ un }}"
+              password: "{{ pwd }}"
+              host: "{{ inventory_hostname }}"
+            register: output
+
+          - assert:
+              that:
+                - "'7.0(3)I2(2d)' in output['response'][0]"
