@@ -168,29 +168,36 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
-proposed:
-    description: list of commands passed into module.
+existing_snapshots:
+    description: list of existing snapshots.
     returned: verbose mode
     type: list
-    sample: ["router eigrp 11", "isolate"]
-existing:
-    description: list of existing profile commands.
+    sample: [{"date": "Tue Sep 13 10:58:08 2016",
+              "description": "First snapshot", "name": "first_snap"},
+            {"date": "Tue Sep 13 10:27:31 2016", "description": "Pre-snapshot",
+            "name": "pre_snapshot"}]
+final_snapshots:
+    description: list of final snapshots.
     returned: verbose mode
     type: list
-    sample: ["router bgp 65535","isolate","router eigrp 10","isolate",
-            "diagnostic bootup level complete"]
-end_state:
-    description: list of profile entries after module execution.
+    sample: [{"date": "Tue Sep 13 10:58:08 2016",
+              "description": "First snapshot", "name": "first_snap"},
+            {"date": "Tue Sep 13 10:27:31 2016", "description": "Pre-snapshot",
+            "name": "pre_snapshot"},
+            {"date": "Tue Sep 13 10:37:50 2016", "description": "Post-snapshot",
+            "name": "post_snapshot"}]
+report_file:
+    description: name of the file where the new snapshot or snapshots
+                 comparison have been stored.
     returned: verbose mode
-    type: list
-    sample: ["router bgp 65535","isolate","router eigrp 10","isolate",
-            "diagnostic bootup level complete","router eigrp 11", "isolate"]
+    type: string
+    sample: "/home/gabriele/Desktop/ntc-ansible/ansible_snapshot"
 updates:
     description: commands sent to the device
-    returned: always
+    returned: when C(action=create), C(action=delete),
+              C(action=add) or C(action=delete_all).
     type: list
-    sample: ["configure maintenance profile maintenance-mode",
-             "router eigrp 11","isolate"]
+    sample: ["snapshot create post_snapshot Post-snapshot"]
 changed:
     description: check to see if a change was made on the device
     returned: always
