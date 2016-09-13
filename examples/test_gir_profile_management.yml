@@ -1,0 +1,111 @@
+---
+
+  - name: Test maintenance profile management with nxos_config
+    hosts: n9k2
+    connection: local
+    gather_facts: no
+
+    # pros:
+    #   - idempotent for profile creation.
+    #
+    # cons:
+    #   - not idempotent for profile deletion.
+    #   - no information about existing profile commands.
+    #   - multiple tasks for profile building due to the need of explicit
+    #     parent/child relationships.
+
+    tasks:
+    # Idempotent
+    - name: Isolate EIGRP in maintenance profile
+      nxos_config:
+        commands:
+          - isolate
+        parents:
+          - configure maintenance profile maintenance-mode
+          - router eigrp 10
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      tags: nxos_config
+      register: result
+
+    # Idempotent
+    - name: Isolate BGP in maintenance profile
+      nxos_config:
+        commands:
+          - isolate
+        parents:
+          - configure maintenance profile maintenance-mode
+          - router bgp 65535
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      register: result
+      tags: nxos_config
+
+    # Idempotent
+    - name: Add configuration commands in maintenance profile
+      nxos_config:
+        commands:
+          - ip pim isolate
+          - system interface shutdown
+        parents:
+          - configure maintenance profile maintenance-mode
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      register: result
+      tags: nxos_config
+
+    # Not idempotent
+    - name: Remove maintenance profile
+      nxos_config:
+        commands:
+          - no configure maintenance profile maintenance-mode
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      register: result
+      tags: nxos_config
+
+  - name: Test maintenance profile management with nxos_gir_profile
+    hosts: n9k2
+    connection: local
+    gather_facts: no
+
+    # pros:
+    #   - idempotent for profile deletion.
+    #   - profile creation in a single task.
+    #   - returns information about existing and final profile commands.
+    #
+    # cons:
+    #   - not idempotent for profile creation.
+
+    tasks:
+    # Not idempotent
+    - name: Isolate EIGRP in maintenance profile
+      nxos_gir_profile:
+        mode: maintenance
+        commands:
+          - router eigrp 10
+          - isolate
+          - router bgp 65535
+          - isolate
+          - ip pim isolate
+          - system interface shutdown
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      register: result
+      tags: nxos_gir_profile
+
+    # Idempotent
+    - name: Remove maintenance profile
+      nxos_gir_profile:
+        mode: maintenance
+        state: absent
+        host: "{{ inventory_hostname }}"
+        username: "{{ un }}"
+        password: "{{ pwd }}"
+      register: result
+      tags: nxos_gir_profile

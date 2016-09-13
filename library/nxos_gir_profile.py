@@ -22,14 +22,14 @@ module: nxos_gir_profile
 version_added: "2.2"
 short_description: Create a maintenance-mode or normal-mode profile for GIR.
 description:
-    - Create a maintenance-mode or normal-mode profile with configuration
+    - Manage a maintenance-mode or normal-mode profile with configuration
       commands that can be applied during graceful removal
       or graceful insertion.
 extends_documentation_fragment: nxos
 author:
     - Gabriele Gerbino (@GGabriele)
 notes:
-    - This module is not idempotent when C(state=absent).
+    - This module is not idempotent when C(state=present).
     - C(state=absent) removes the whole profile.
 options:
     commands:
@@ -313,7 +313,7 @@ def main():
     argument_spec = dict(
             commands=dict(required=False, type='list'),
             mode=dict(required=True, choices=['maintenance', 'normal']),
-            state=dict(choices=['absent', 'present', 'delete_acl'],
+            state=dict(choices=['absent', 'present'],
                        default='present'),
             include_defaults=dict(default=False),
             config=dict(),
