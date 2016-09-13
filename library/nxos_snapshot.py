@@ -578,10 +578,7 @@ def main():
             element_key2=dict(required=False, type='str'),
             save_snapshot_locally=dict(required=False, type='bool',
                                        default=False),
-            path=dict(required=False, type='str', default='./'),
-            include_defaults=dict(default=False),
-            config=dict(),
-            save=dict(type='bool', default=False)
+            path=dict(required=False, type='str', default='./')
     )
     module = get_network_module(argument_spec=argument_spec,
                                 mutually_exclusive=[['delete_all',
@@ -626,8 +623,8 @@ def main():
 
     result = {}
     written_file = ''
-    if module.check_mode:
-        module.exit_json(changed=True, commands=cmds)
+    if module.check_mode and action != 'compare':
+        module.exit_json(changed=True, commands=action_results)
     else:
         if action == 'compare':
             written_file = write_on_file(action_results,
