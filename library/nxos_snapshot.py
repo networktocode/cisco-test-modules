@@ -194,8 +194,7 @@ report_file:
     sample: "/home/gabriele/Desktop/ntc-ansible/ansible_snapshot"
 updates:
     description: commands sent to the device
-    returned: when C(action=create), C(action=delete),
-              C(action=add) or C(action=delete_all).
+    returned: verbose mode
     type: list
     sample: ["snapshot create post_snapshot Post-snapshot"]
 changed:
@@ -633,7 +632,7 @@ def main():
             written_file = write_on_file(action_results,
                           module.params['comparison_results_file'],
                           module)
-            changed = True
+            result['updates'] = []
         else:
             if action_results:
                 execute_config_command(action_results, module)
@@ -648,13 +647,13 @@ def main():
                                     module.params['snapshot_name'], module)
 
     result['connected'] = module.connected
+    result['changed'] = changed
     if module._verbosity > 0:
         end_state = invoke('get_existing', module)
         result['final_snapshots'] = final_snapshots
         result['existing_snapshots'] = existing_snapshots
         if written_file:
             result['report_file'] = written_file
-        result['changed'] = changed
 
     module.exit_json(**result)
 
