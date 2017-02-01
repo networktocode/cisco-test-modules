@@ -1,0 +1,18 @@
+---
+
+- name: ENSURE BASH SHELL IS ACTIVE
+  nxos_feature:
+    feature: bash-shell
+    state: enabled
+    provider: "{{ nxos_provider }}"
+    transport: nxapi
+
+- name: BUILD COMMANDS
+  set_fact: 
+    commands: "{{ before + command_set + after }}"
+
+- name: SEND COMMANDS
+  ntc_config_command:
+    connection: ssh
+    platform: cisco_nxos
+    provider: "{{ nxos_provider }}"

@@ -1,0 +1,14 @@
+---
+
+nxos_provider:
+  username: "{{ un }}"
+  password: "{{ pwd }}"
+  host: "{{ inventory_hostname }}"
+
+before:
+  - run bash
+  - sudo su
+
+after:
+  - exit
+  - exit

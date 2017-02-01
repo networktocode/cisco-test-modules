@@ -1,0 +1,13 @@
+---
+  - name: BOOTSTRAPPING CISCO PUPPET
+    hosts: nxos
+    gather_facts: no
+    connection: local
+
+
+    roles:
+      - role: nxos_patch
+        command_set:
+          - yum install http://yum.puppetlabs.com/puppetlabs-release-pc1-cisco-wrlinux-5.noarch.rpm
+          - yum install puppet
+          - export PATH=/opt/puppetlabs/puppet/bin:/opt/puppetlabs/puppet/lib:$PATH
