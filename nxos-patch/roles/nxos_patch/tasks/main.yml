@@ -16,3 +16,4 @@
     connection: ssh
     platform: cisco_nxos
     provider: "{{ nxos_provider }}"
+    commands: "{{ commands }}"
